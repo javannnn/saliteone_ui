@@ -20,11 +20,11 @@ export default function Login() {
       body.set("usr", email);
       body.set("pwd", password);
 
-      await api.post("/api/method/login", body, {
+      await api.post("/method/login", body, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" }
       });
 
-      const r = await api.get("/api/method/frappe.auth.get_logged_user");
+      const r = await api.get("/method/frappe.auth.get_logged_user");
       setUser({ name: r.data.message, full_name: email, roles: [] });
     } catch (e:any) {
       console.error(e?.response || e);
