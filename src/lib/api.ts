@@ -8,6 +8,21 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" }
 });
 
+// Auth helpers
+export async function login(usr: string, pwd: string) {
+  const body = new URLSearchParams();
+  body.set("usr", usr);
+  body.set("pwd", pwd);
+  return api.post("/method/login", body, {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+  });
+}
+
+export async function getLoggedUser() {
+  const r = await api.get("/method/frappe.auth.get_logged_user");
+  return r.data.message as string;
+}
+
 export async function ping() {
   const r = await api.get("/method/ping");
   return r.data;
