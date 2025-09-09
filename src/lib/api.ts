@@ -83,6 +83,70 @@ export async function bootstrapPermissions(dts: string[]) {
   return Object.fromEntries(entries) as Record<string, boolean>;
 }
 
+// Module lists (minimal fields)
+export type MemberRow = { name: string; first_name: string; last_name: string; status: string };
+export async function listMembers() {
+  const dt = encodeURIComponent("Member");
+  const r = await api.get(`/resource/${dt}`, {
+    params: { fields: '["name","first_name","last_name","status"]', limit_page_length: 20 }
+  });
+  return r.data.data as MemberRow[];
+}
+
+export type PaymentRow = { name: string; member: string; amount: number; status: string };
+export async function listPayments() {
+  const dt = encodeURIComponent("Payment");
+  const r = await api.get(`/resource/${dt}`, {
+    params: { fields: '["name","member","amount","status"]', limit_page_length: 20 }
+  });
+  return r.data.data as PaymentRow[];
+}
+
+export type SponsorshipRow = { name: string; sponsor: string; frequency: string };
+export async function listSponsorships() {
+  const dt = encodeURIComponent("Sponsorship");
+  const r = await api.get(`/resource/${dt}`, {
+    params: { fields: '["name","sponsor","frequency"]', limit_page_length: 20 }
+  });
+  return r.data.data as SponsorshipRow[];
+}
+
+export type NewcomerRow = { name: string; full_name: string; family_size?: number };
+export async function listNewcomers() {
+  const dt = encodeURIComponent("Newcomer");
+  const r = await api.get(`/resource/${dt}`, {
+    params: { fields: '["name","full_name","family_size"]', limit_page_length: 20 }
+  });
+  return r.data.data as NewcomerRow[];
+}
+
+export type VolunteerRow = { name: string; member: string; group?: string };
+export async function listVolunteers() {
+  const dt = encodeURIComponent("Volunteer");
+  const r = await api.get(`/resource/${dt}`, {
+    params: { fields: '["name","member","group"]', limit_page_length: 20 }
+  });
+  return r.data.data as VolunteerRow[];
+}
+
+export type MediaRequestRow = { name: string; title: string; status: string };
+export async function listMediaRequests() {
+  const dt = encodeURIComponent("Media Request");
+  const r = await api.get(`/resource/${dt}`, {
+    params: { fields: '["name","title","status"]', limit_page_length: 20 }
+  });
+  return r.data.data as MediaRequestRow[];
+}
+
+export type SchoolEnrollmentRow = { name: string; member?: string; child_name?: string; school_type: string };
+export async function listSchoolEnrollments() {
+  const dt = encodeURIComponent("School Enrollment");
+  const r = await api.get(`/resource/${dt}`, {
+    params: { fields: '["name","member","child_name","school_type"]', limit_page_length: 20 }
+  });
+  return r.data.data as SchoolEnrollmentRow[];
+}
+
 // Interceptors
 api.interceptors.response.use(
   (r) => r,
