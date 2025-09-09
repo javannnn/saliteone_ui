@@ -16,11 +16,19 @@ export default function Login() {
   async function submit() {
     setBusy(true); setError(null);
     try {
-      await api.post("/api/method/login", { usr: email, pwd: password });
+      const body = new URLSearchParams();
+      body.set("usr", email);
+      body.set("pwd", password);
+
+      await api.post("/api/method/login", body, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+      });
+
       const r = await api.get("/api/method/frappe.auth.get_logged_user");
       setUser({ name: r.data.message, full_name: email, roles: [] });
     } catch (e:any) {
-      setError("Login failed.");
+      console.error(e?.response || e);
+      setError("Login failed: " + (e?.response?.data?.message || e?.message));
     } finally {
       setBusy(false);
     }
