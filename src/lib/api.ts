@@ -8,7 +8,7 @@ export const api = axios.create({
 });
 
 export async function ping() {
-  const r = await api.get("/api/method/ping");
+  const r = await api.get("/method/ping");
   return r.data;
 }
 
