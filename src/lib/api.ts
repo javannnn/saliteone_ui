@@ -8,6 +8,21 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" }
 });
 
+// Auth helpers
+export async function login(usr: string, pwd: string) {
+  const body = new URLSearchParams();
+  body.set("usr", usr);
+  body.set("pwd", pwd);
+  return api.post("/method/login", body, {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+  });
+}
+
+export async function getLoggedUser() {
+  const r = await api.get("/method/frappe.auth.get_logged_user");
+  return r.data.message as string;
+}
+
 export async function ping() {
   const r = await api.get("/method/ping");
   return r.data;
@@ -81,6 +96,23 @@ export async function bootstrapPermissions(dts: string[]) {
     dts.map(async (d) => [d, await hasPermission(d, "read")] as const)
   );
   return Object.fromEntries(entries) as Record<string, boolean>;
+}
+
+// Generic CRUD helpers
+export async function getDoc<T = any>(doctype: string, name: string, fields?: string[]) {
+  const r = await api.get(`/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+    params: fields ? { fields: JSON.stringify(fields) } : undefined
+  });
+  return r.data.data as T;
+}
+
+export async function updateDoc<T = any>(doctype: string, name: string, data: Record<string, any>) {
+  const r = await api.put(`/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, data);
+  return r.data.data as T;
+}
+
+export async function deleteDoc(doctype: string, name: string) {
+  await api.delete(`/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`);
 }
 
 // Module lists (minimal fields)

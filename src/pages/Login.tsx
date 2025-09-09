@@ -2,10 +2,10 @@ import { useState } from "react";
 import Input from "@/components/ui/input";
 import Label from "@/components/ui/label";
 import Button from "@/components/ui/button";
-import { api } from "@/lib/api";
+// avoid importing `api` here to prevent collisions
 import { useAuth } from "@/stores/auth";
 import { useUI } from "@/stores/ui";
-import { bootstrapPermissions, api } from "@/lib/api";
+import { bootstrapPermissions, login, getLoggedUser } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 
 export default function Login() {
@@ -19,21 +19,15 @@ export default function Login() {
   async function submit() {
     setBusy(true); setError(null);
     try {
-      const body = new URLSearchParams();
-      body.set("usr", email);
-      body.set("pwd", password);
-
-      await api.post("/method/login", body, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
-      });
-
-      const r = await api.get("/method/frappe.auth.get_logged_user");
+      await login(email, password);
+      const userId = await getLoggedUser();
       let roles: string[] = [];
       try {
-        const rr = await api.get("/method/frappe.get_roles");
-        roles = rr.data.message || [];
+        const resp = await fetch("/api/method/frappe.get_roles");
+        const data = await resp.json();
+        roles = data?.message || [];
       } catch {}
-      setUser({ name: r.data.message, full_name: email, roles });
+      setUser({ name: userId, full_name: email, roles });
 
       // Bootstrap permissions for key doctypes
       const doctypes = [

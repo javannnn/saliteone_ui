@@ -12,6 +12,8 @@ import Newcomers from "@/pages/Newcomers";
 import Volunteers from "@/pages/Volunteers";
 import Media from "@/pages/Media";
 import Schools from "@/pages/Schools";
+import ProcessDetail from "@/pages/ProcessDetail";
+import MemberDetail from "@/pages/MemberDetail";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 import { useAuth } from "@/stores/auth";
@@ -24,6 +26,8 @@ function Authed({ children }: { children: JSX.Element }) {
 const router = createBrowserRouter([
   { path: "/", element: <AppShell><Authed><Dashboard /></Authed></AppShell> },
   { path: "/processes", element: <AppShell><Authed><Processes /></Authed></AppShell> },
+  { path: "/processes/:name", element: <AppShell><Authed><ProcessDetail /></Authed></AppShell> },
+  { path: "/members/:name", element: <AppShell><Authed><MemberDetail /></Authed></AppShell> },
   { path: "/members", element: <AppShell><Authed><Members /></Authed></AppShell> },
   { path: "/payments", element: <AppShell><Authed><Payments /></Authed></AppShell> },
   { path: "/sponsorships", element: <AppShell><Authed><Sponsorships /></Authed></AppShell> },
