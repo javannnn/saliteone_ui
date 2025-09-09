@@ -4,6 +4,8 @@ import Label from "@/components/ui/label";
 import Button from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuth } from "@/stores/auth";
+import { useUI } from "@/stores/ui";
+import { bootstrapPermissions, api } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 
 export default function Login() {
@@ -12,15 +14,36 @@ export default function Login() {
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState<string|null>(null);
   const { setUser } = useAuth();
+  const { setPerms } = useUI();
 
   async function submit() {
     setBusy(true); setError(null);
     try {
-      await api.post("/api/method/login", { usr: email, pwd: password });
-      const r = await api.get("/api/method/frappe.auth.get_logged_user");
-      setUser({ name: r.data.message, full_name: email, roles: [] });
+      const body = new URLSearchParams();
+      body.set("usr", email);
+      body.set("pwd", password);
+
+      await api.post("/method/login", body, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+      });
+
+      const r = await api.get("/method/frappe.auth.get_logged_user");
+      let roles: string[] = [];
+      try {
+        const rr = await api.get("/method/frappe.get_roles");
+        roles = rr.data.message || [];
+      } catch {}
+      setUser({ name: r.data.message, full_name: email, roles });
+
+      // Bootstrap permissions for key doctypes
+      const doctypes = [
+        "Member","Payment","Sponsorship","Newcomer","Volunteer","Media Request","School Enrollment","Workflow Process"
+      ];
+      const perms = await bootstrapPermissions(doctypes);
+      setPerms(perms);
     } catch (e:any) {
-      setError("Login failed.");
+      console.error(e?.response || e);
+      setError("Login failed: " + (e?.response?.data?.message || e?.message));
     } finally {
       setBusy(false);
     }
