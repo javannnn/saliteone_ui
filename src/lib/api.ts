@@ -98,6 +98,23 @@ export async function bootstrapPermissions(dts: string[]) {
   return Object.fromEntries(entries) as Record<string, boolean>;
 }
 
+// Generic CRUD helpers
+export async function getDoc<T = any>(doctype: string, name: string, fields?: string[]) {
+  const r = await api.get(`/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+    params: fields ? { fields: JSON.stringify(fields) } : undefined
+  });
+  return r.data.data as T;
+}
+
+export async function updateDoc<T = any>(doctype: string, name: string, data: Record<string, any>) {
+  const r = await api.put(`/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, data);
+  return r.data.data as T;
+}
+
+export async function deleteDoc(doctype: string, name: string) {
+  await api.delete(`/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`);
+}
+
 // Module lists (minimal fields)
 export type MemberRow = { name: string; first_name: string; last_name: string; status: string };
 export async function listMembers() {
