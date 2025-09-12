@@ -1,16 +1,13 @@
 import { PropsWithChildren, useMemo } from "react";
 import CssBaseline from "@mui/material/CssBaseline";
 import IconButton from "@mui/material/IconButton";
-import type { PaletteMode } from "@mui/material";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { useUI } from "@/stores/ui";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
-import createCache from "@emotion/cache";
-import { CacheProvider } from "@emotion/react";
 
-function makeTheme(mode: PaletteMode) {
+function makeTheme(mode: "light" | "dark") {
   return createTheme({
     palette: {
       mode,
@@ -31,11 +28,7 @@ function makeTheme(mode: PaletteMode) {
     },
     components: {
       MuiPaper: { styleOverrides: { root: { borderRadius: 16 } } },
-      MuiButton: {
-        defaultProps: { disableElevation: true },
-        styleOverrides: { root: { textTransform: "none", borderRadius: 12 } },
-      },
-      MuiListItemButton: { styleOverrides: { root: { borderRadius: 10, margin: "2px 8px" } } },
+      MuiButton: { defaultProps: { disableElevation: true } },
     },
   });
 }
@@ -43,29 +36,23 @@ function makeTheme(mode: PaletteMode) {
 export function ThemeContainer({ children }: PropsWithChildren) {
   const { theme } = useUI();
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
-  const mode: PaletteMode = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
+  const mode = (theme === "system" ? (prefersDark ? "dark" : "light") : theme) as "light" | "dark";
   const themeObj = useMemo(() => makeTheme(mode), [mode]);
-  const insertionPoint = document.querySelector('meta[name="emotion-insertion-point"]') as Element | null;
-  const cache = useMemo(() => createCache({ key: "mui", insertionPoint: insertionPoint || undefined }), [insertionPoint]);
   return (
-    <CacheProvider value={cache}>
-      <ThemeProvider theme={themeObj}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
-    </CacheProvider>
+    <ThemeProvider theme={themeObj}>
+      <CssBaseline />
+      {children}
+    </ThemeProvider>
   );
 }
 
 export function ThemeToggleButton() {
   const { theme, setTheme } = useUI();
-  const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const cycle = () => {
-    // Always flip the visible mode on click; avoid a no-op when theme is 'system'
-    const currentIsDark = theme === "dark" || (theme === "system" && prefersDark);
-    setTheme(currentIsDark ? "light" : "dark");
+    if (theme === "system") setTheme("light");
+    else if (theme === "light") setTheme("dark");
+    else setTheme("system");
   };
-  const currentIsDark = theme === "dark" || (theme === "system" && prefersDark);
-  const icon = currentIsDark ? <DarkModeIcon /> : <LightModeIcon />;
+  const icon = theme === "dark" ? <DarkModeIcon /> : <LightModeIcon />;
   return <IconButton color="inherit" onClick={cycle} title={`Theme: ${theme}`}>{icon}</IconButton>;
 }
