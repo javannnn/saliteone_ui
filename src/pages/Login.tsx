@@ -7,7 +7,11 @@ import { useAuth } from "@/stores/auth";
 import { useUI } from "@/stores/ui";
 import { bootstrapPermissions, login, whoami } from "@/lib/api";
 import { pickHomeForRoles } from "@/lib/roles";
-import { useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import Link from "@mui/material/Link";
+import Stack from "@mui/material/Stack";
+import Divider from "@mui/material/Divider";
+import Typography from "@mui/material/Typography";
 import { Card } from "@/components/ui/card";
 
 export default function Login() {
@@ -58,6 +62,15 @@ export default function Login() {
           {error && <div className="text-sm text-red-600">{error}</div>}
           <Button onClick={submit} disabled={busy}>{busy?"Signing in…":"Sign in"}</Button>
         </div>
+        <Stack spacing={1} sx={{ mt: 2, alignItems: "center" }}>
+          <Divider flexItem />
+          <Typography variant="body2" color="text.secondary">
+            New here?{" "}
+            <Link component={RouterLink} to="/register/volunteer" underline="hover">
+              Become a volunteer
+            </Link>
+          </Typography>
+        </Stack>
       </Card>
     </div>
   );
