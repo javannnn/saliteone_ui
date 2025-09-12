@@ -20,7 +20,13 @@ import GroupIcon from "@mui/icons-material/Groups";
 import SaveIcon from "@mui/icons-material/Save";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { DataGrid, GridColDef, GridToolbar } from "@mui/x-data-grid";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import IconButton from "@mui/material/IconButton";
 
 import { useAuth } from "@/stores/auth";
 import {
@@ -172,13 +178,6 @@ function VolunteerAdmin() {
     onError: e => toast.error(extractErr(e))
   });
 
-  const cols: GridColDef[] = [
-    { field: "name", headerName: "ID", width: 180 },
-    { field: "member", headerName: "Member", flex: 1, minWidth: 200 },
-    { field: "group", headerName: "Group", flex: 1, minWidth: 180, editable: true },
-    { field: "services", headerName: "Services", flex: 1.5, minWidth: 260, editable: true },
-  ];
-
   const mUpdateVol = useMutation({
     mutationFn: ({ id, patch }:{id:string, patch:Partial<Volunteer>}) => updateVolunteer(id, patch),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["volunteers"] }); toast.success("Updated"); },
@@ -223,21 +222,52 @@ function VolunteerAdmin() {
         </Grid>
 
         <Grid item xs={12} md={7}>
-          <Paper elevation={0} sx={{ p: 1.5, height: 520, border: (t)=>`1px solid ${t.palette.divider}` }}>
-            <DataGrid
-              rows={(qVols.data||[]).map(v=>({ id: v.name, ...v }))}
-              columns={cols}
-              disableRowSelectionOnClick
-              slots={{ toolbar: GridToolbar }}
-              processRowUpdate={(newRow, oldRow) => {
-                const patch: Partial<Volunteer> = {};
-                if (newRow.group !== oldRow.group) patch.group = newRow.group;
-                if (newRow.services !== oldRow.services) patch.services = newRow.services;
-                if (Object.keys(patch).length) mUpdateVol.mutate({ id: newRow.id, patch });
-                return newRow;
-              }}
-              onProcessRowUpdateError={(e)=>toast.error(extractErr(e))}
-            />
+          <Paper elevation={0} sx={{ p: 1.5, border: (t)=>`1px solid ${t.palette.divider}` }}>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Member</TableCell>
+                    <TableCell>Group</TableCell>
+                    <TableCell>Services</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(qVols.data||[]).map((v)=> (
+                    <TableRow key={v.name} hover>
+                      <TableCell sx={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }}>{v.name}</TableCell>
+                      <TableCell>{v.member}</TableCell>
+                      <TableCell sx={{ minWidth: 160 }}>
+                        <TextField
+                          size="small"
+                          defaultValue={v.group || ""}
+                          onBlur={(e)=>{
+                            const val = e.target.value;
+                            if (val !== (v.group||"")) mUpdateVol.mutate({ id: v.name, patch: { group: val } });
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ minWidth: 240 }}>
+                        <TextField
+                          size="small"
+                          defaultValue={v.services || ""}
+                          onBlur={(e)=>{
+                            const val = e.target.value;
+                            if (val !== (v.services||"")) mUpdateVol.mutate({ id: v.name, patch: { services: val } });
+                          }}
+                          multiline minRows={1}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton color="error" onClick={()=>mDeleteVol.mutate(v.name)} title="Delete"><DeleteIcon/></IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Paper>
         </Grid>
       </Grid>
