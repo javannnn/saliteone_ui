@@ -17,9 +17,28 @@ import MemberDetail from "@/pages/MemberDetail";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 import { useAuth } from "@/stores/auth";
+import { useEffect } from "react";
+import { whoami } from "@/lib/api";
 
 function Authed({ children }: { children: JSX.Element }) {
-  const { user } = useAuth();
+  const { user, setSession, clear } = useAuth();
+  useEffect(() => {
+    (async () => {
+      try {
+        const m = await whoami();
+        if (m.user && m.user !== "Guest") {
+          if (!user || user.name !== m.user) {
+            setSession({ name: m.user, full_name: m.full_name }, m.roles || []);
+          }
+        } else {
+          clear();
+        }
+      } catch {
+        clear();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return user ? children : <Login />;
 }
 
