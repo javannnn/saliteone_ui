@@ -18,6 +18,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { Link as RouterLink } from "react-router-dom";
 
 import {
   ping,
@@ -99,9 +100,9 @@ export default function Dashboard() {
                   <Typography color="text.secondary">Create your volunteer profile or open admin tools to add groups and volunteers.</Typography>
                 </Box>
                 <Stack direction="row" spacing={1}>
-                  <Button variant="contained" href="/volunteers">Open Volunteers</Button>
+                  <Button variant="contained" component={RouterLink} to="/volunteers">Open Volunteers</Button>
                   {(useAuth().roles||[]).some(r=>["Admin","User Management Admin","Volunteer Admin"].includes(r)) && (
-                    <Button variant="outlined" href="/volunteers">Admin Tools</Button>
+                    <Button variant="outlined" component={RouterLink} to="/volunteers">Admin Tools</Button>
                   )}
                 </Stack>
               </Stack>

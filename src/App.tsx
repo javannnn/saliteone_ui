@@ -14,6 +14,7 @@ import Media from "@/pages/Media";
 import Schools from "@/pages/Schools";
 import ProcessDetail from "@/pages/ProcessDetail";
 import MemberDetail from "@/pages/MemberDetail";
+import RegisterVolunteer from "@/pages/RegisterVolunteer";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 import { useAuth } from "@/stores/auth";
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
   { path: "/volunteers", element: <AppLayout><Authed><Volunteers /></Authed></AppLayout> },
   { path: "/media", element: <AppLayout><Authed><Media /></Authed></AppLayout> },
   { path: "/schools", element: <AppLayout><Authed><Schools /></Authed></AppLayout> },
+  { path: "/register/volunteer", element: <RegisterVolunteer /> },
   { path: "*", element: <NotFound /> }
 ]);
 
