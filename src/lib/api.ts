@@ -72,7 +72,8 @@ export async function whoami(): Promise<WhoAmI> {
 }
 
 export async function logout() {
-  await api.post("/method/logout");
+  // Use GET to avoid CSRF issues in dev; mark to skip redirect handling
+  await api.get("/method/logout", { [SKIP_REDIRECT_KEY]: true } as any);
 }
 
 // KPIs
