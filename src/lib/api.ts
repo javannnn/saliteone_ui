@@ -187,11 +187,12 @@ export async function listNewcomers() {
 
 export type VolunteerRow = { name: string; member: string; group?: string };
 export async function listVolunteers() {
+  // Upgraded volunteer list with services and higher limit
   const dt = encodeURIComponent("Volunteer");
   const r = await api.get(`/resource/${dt}`, {
-    params: { fields: '["name","member","group"]', limit_page_length: 20 }
+    params: { fields: JSON.stringify(["name","member","group","services"]), order_by: "modified desc", limit_page_length: 200 }
   });
-  return r.data.data as VolunteerRow[];
+  return r.data.data as Array<{ name:string; member:string; group?:string; services?:string }>;
 }
 
 export type MediaRequestRow = { name: string; title: string; status: string };
@@ -210,6 +211,80 @@ export async function listSchoolEnrollments() {
     params: { fields: '["name","member","child_name","school_type"]', limit_page_length: 20 }
   });
   return r.data.data as SchoolEnrollmentRow[];
+}
+
+// ---------- Generic list ----------
+export async function listDocs<T = any>(doctype: string, opts: {
+  fields?: string[]; filters?: Record<string, any>; order_by?: string; limit?: number
+} = {}) {
+  const r = await api.get(`/resource/${encodeURIComponent(doctype)}`, {
+    params: {
+      ...(opts.fields ? { fields: JSON.stringify(opts.fields) } : {}),
+      ...(opts.filters ? { filters: JSON.stringify(opts.filters) } : {}),
+      ...(opts.order_by ? { order_by: opts.order_by } : {}),
+      ...(opts.limit ? { limit_page_length: opts.limit } : {}),
+    }
+  });
+  return r.data.data as T[];
+}
+
+// ---------- Member lookup by email ----------
+export async function getMemberByEmail(email: string) {
+  const rows = await listDocs<{ name: string; first_name?: string; last_name?: string; email?: string }>("Member", {
+    fields: ["name","first_name","last_name","email"], filters: { email }, limit: 1
+  });
+  return rows[0] || null;
+}
+
+// ---------- Volunteer ----------
+export type Volunteer = { name: string; member: string; group?: string; services?: string };
+export async function getVolunteerByMember(member: string) {
+  const rows = await listDocs<Volunteer>("Volunteer", { filters: { member }, limit: 1, fields: ["name","member","group","services"] });
+  return rows[0] || null;
+}
+export async function createVolunteer(data: { member: string; group?: string; services?: string }) {
+  const r = await api.post("/resource/Volunteer", data);
+  return r.data.data as Volunteer;
+}
+export async function updateVolunteer(name: string, patch: Partial<Volunteer>) {
+  const r = await api.put(`/resource/Volunteer/${encodeURIComponent(name)}`, patch);
+  return r.data.data as Volunteer;
+}
+export async function deleteVolunteer(name: string) {
+  await api.delete(`/resource/Volunteer/${encodeURIComponent(name)}`);
+}
+
+// ---------- Volunteer Group ----------
+export type VolunteerGroup = { name: string; group_name: string; leader?: string; description?: string };
+export async function listVolunteerGroups() {
+  return listDocs<VolunteerGroup>("Volunteer Group", { fields: ["name","group_name","leader","description"], order_by: "group_name asc", limit: 200 });
+}
+export async function createVolunteerGroup(data: { group_name: string; leader?: string; description?: string }) {
+  const r = await api.post("/resource/Volunteer%20Group", data);
+  return r.data.data as VolunteerGroup;
+}
+export async function updateVolunteerGroup(name: string, patch: Partial<VolunteerGroup>) {
+  const r = await api.put(`/resource/Volunteer%20Group/${encodeURIComponent(name)}`, patch);
+  return r.data.data as VolunteerGroup;
+}
+export async function deleteVolunteerGroup(name: string) {
+  await api.delete(`/resource/Volunteer%20Group/${encodeURIComponent(name)}`);
+}
+
+// ---------- ToDo feed for current user ----------
+export type ToDoLite = { name: string; status?: string; date?: string; reference_type?: string; reference_name?: string; description?: string };
+export async function listMyToDos(limit = 20) {
+  const r = await api.get("/method/frappe.client.get_list", {
+    params: {
+      doctype: "ToDo",
+      fields: JSON.stringify(["name","status","date","reference_type","reference_name","description"]),
+      filters: JSON.stringify({ owner: undefined, status: "Open" }),
+      limit_page_length: limit,
+      order_by: "modified desc"
+    },
+    __skipAuthRedirect: true as any
+  } as any);
+  return (r.data.message || []) as ToDoLite[];
 }
 
 // (removed duplicate interceptor)
