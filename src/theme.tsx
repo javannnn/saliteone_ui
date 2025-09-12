@@ -7,6 +7,8 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useUI } from "@/stores/ui";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
+import createCache from "@emotion/cache";
+import { CacheProvider } from "@emotion/react";
 
 function makeTheme(mode: PaletteMode) {
   return createTheme({
@@ -21,7 +23,7 @@ function makeTheme(mode: PaletteMode) {
     shape: { borderRadius: 12 },
     typography: {
       fontFamily: [
-        "Inter", "Roboto", "system-ui", "-apple-system", "Segoe UI",
+        '"Roboto Flex"', "Inter", "system-ui", "-apple-system", "Segoe UI",
         "Helvetica Neue", "Arial", "Noto Sans", "sans-serif"
       ].join(","),
       h1: { fontWeight: 700, letterSpacing: "-0.4px" },
@@ -29,7 +31,11 @@ function makeTheme(mode: PaletteMode) {
     },
     components: {
       MuiPaper: { styleOverrides: { root: { borderRadius: 16 } } },
-      MuiButton: { defaultProps: { disableElevation: true } },
+      MuiButton: {
+        defaultProps: { disableElevation: true },
+        styleOverrides: { root: { textTransform: "none", borderRadius: 12 } },
+      },
+      MuiListItemButton: { styleOverrides: { root: { borderRadius: 10, margin: "2px 8px" } } },
     },
   });
 }
@@ -39,11 +45,15 @@ export function ThemeContainer({ children }: PropsWithChildren) {
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const mode: PaletteMode = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
   const themeObj = useMemo(() => makeTheme(mode), [mode]);
+  const insertionPoint = document.querySelector('meta[name="emotion-insertion-point"]') as Element | null;
+  const cache = useMemo(() => createCache({ key: "mui", insertionPoint: insertionPoint || undefined }), [insertionPoint]);
   return (
-    <ThemeProvider theme={themeObj}>
-      <CssBaseline />
-      {children}
-    </ThemeProvider>
+    <CacheProvider value={cache}>
+      <ThemeProvider theme={themeObj}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
+    </CacheProvider>
   );
 }
 

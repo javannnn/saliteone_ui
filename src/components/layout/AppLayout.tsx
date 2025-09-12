@@ -35,18 +35,18 @@ const RAIL_W = 72;
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: <DashboardIcon /> },
-  { to: "/processes", label: "Processes", icon: <SchemaIcon /> },
-  { to: "/members", label: "Members", icon: <PeopleIcon /> },
-  { to: "/payments", label: "Payments", icon: <PaymentsIcon /> },
-  { to: "/sponsorships", label: "Sponsorships", icon: <LoyaltyIcon /> },
-  { to: "/newcomers", label: "Newcomers", icon: <TravelExploreIcon /> },
-  { to: "/volunteers", label: "Volunteers", icon: <VolunteerActivismIcon /> },
-  { to: "/media", label: "Media", icon: <PhotoLibraryIcon /> },
-  { to: "/schools", label: "Schools", icon: <SchoolIcon /> },
-];
+  { to: "/processes", label: "Processes", icon: <SchemaIcon />, permKey: "Workflow Process" },
+  { to: "/members", label: "Members", icon: <PeopleIcon />, permKey: "Member" },
+  { to: "/payments", label: "Payments", icon: <PaymentsIcon />, permKey: "Payment" },
+  { to: "/sponsorships", label: "Sponsorships", icon: <LoyaltyIcon />, permKey: "Sponsorship" },
+  { to: "/newcomers", label: "Newcomers", icon: <TravelExploreIcon />, permKey: "Newcomer" },
+  { to: "/volunteers", label: "Volunteers", icon: <VolunteerActivismIcon />, permKey: "Volunteer" },
+  { to: "/media", label: "Media", icon: <PhotoLibraryIcon />, permKey: "Media Request" },
+  { to: "/schools", label: "Schools", icon: <SchoolIcon />, permKey: "School Enrollment" },
+] as const;
 
 export default function AppLayout({ children }: PropsWithChildren) {
-  const { navOpen, setNavOpen, locale, setLocale } = useUI();
+  const { navOpen, setNavOpen, locale, setLocale, perms } = useUI();
   const { user, roles, clear } = useAuth();
   const isMdUp = useMediaQuery("(min-width:900px)");
   const { pathname } = useLocation();
@@ -63,7 +63,8 @@ export default function AppLayout({ children }: PropsWithChildren) {
       </Toolbar>
       <Divider />
       <List sx={{ flex: 1 }}>
-        {NAV.map((item) => (
+        {NAV.filter(i => !("permKey" in i) || (i as any).permKey == null || perms[(i as any).permKey as string])
+          .map((item) => (
           <ListItemButton
             key={item.to}
             component={Link}
