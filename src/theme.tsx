@@ -1,6 +1,9 @@
 import { PropsWithChildren, useMemo } from "react";
-import { CssBaseline, IconButton, PaletteMode, ThemeProvider, createTheme } from "@mui/material";
-import { useMediaQuery } from "@mui/material";
+import CssBaseline from "@mui/material/CssBaseline";
+import IconButton from "@mui/material/IconButton";
+import type { PaletteMode } from "@mui/material";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { useUI } from "@/stores/ui";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
@@ -54,4 +57,3 @@ export function ThemeToggleButton() {
   const icon = theme === "dark" ? <DarkModeIcon /> : <LightModeIcon />;
   return <IconButton color="inherit" onClick={cycle} title={`Theme: ${theme}`}>{icon}</IconButton>;
 }
-

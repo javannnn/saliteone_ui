@@ -1,9 +1,18 @@
 import { PropsWithChildren, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  AppBar, Toolbar, Typography, Drawer, Divider, List, ListItemButton, ListItemIcon, ListItemText,
-  IconButton, Box, Chip, useMediaQuery
-} from "@mui/material";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import Drawer from "@mui/material/Drawer";
+import Divider from "@mui/material/Divider";
+import List from "@mui/material/List";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import IconButton from "@mui/material/IconButton";
+import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import SchemaIcon from "@mui/icons-material/Schema";
@@ -126,4 +135,3 @@ export default function AppLayout({ children }: PropsWithChildren) {
     </Box>
   );
 }
-
