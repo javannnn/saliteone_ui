@@ -2,10 +2,16 @@ import Button from "@/components/ui/button";
 import { useAuth } from "@/stores/auth";
 import { useUI } from "@/stores/ui";
 import { t } from "@/lib/i18n";
+import { logout as apiLogout } from "@/lib/api";
 
 export default function Topbar() {
-  const { user, logout } = useAuth();
+  const { user, clear } = useAuth();
   const { locale, setLocale } = useUI();
+  async function doLogout() {
+    try { await apiLogout(); } catch {}
+    clear();
+    window.location.href = "/";
+  }
   return (
     <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-white/70 px-4 backdrop-blur dark:bg-zinc-900/70">
       <div className="font-semibold">Salite One</div>
@@ -16,7 +22,7 @@ export default function Topbar() {
           <Button size="sm" variant={locale==="am"?"default":"outline"} onClick={()=>setLocale("am")}>AM</Button>
         </div>
         {user ? <div className="text-sm">{user.full_name}</div> : null}
-        {user ? <Button variant="outline" onClick={logout}>Sign out</Button> : null}
+        {user ? <Button variant="outline" onClick={doLogout}>Sign out</Button> : null}
       </div>
     </div>
   );

@@ -46,6 +46,42 @@ export async function createProcess(input: { title: string; status?: string }) {
   return r.data.data as Process;
 }
 
+// Interceptors / Global handlers
+api.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (!err?.response) {
+      toast.error("Network error");
+      return Promise.reject(err);
+    }
+    if (err.response.status === 401) {
+      try { localStorage.removeItem("auth"); } catch {}
+      window.location.href = "/";
+    }
+    return Promise.reject(err);
+  }
+);
+
+// Auth helpers
+export async function login(usr: string, pwd: string) {
+  const body = new URLSearchParams();
+  body.set("usr", usr);
+  body.set("pwd", pwd);
+  return api.post("/method/login", body, {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+  });
+}
+
+export type WhoAmI = { user: string; full_name: string; roles: string[] };
+export async function whoami(): Promise<WhoAmI> {
+  const r = await api.get("/method/salitemiret.api.auth.whoami");
+  return (r.data?.message ?? r.data) as WhoAmI;
+}
+
+export async function logout() {
+  await api.post("/method/logout");
+}
+
 // KPIs
 export async function getMyTaskCount() {
   const r = await api.get("/method/frappe.client.get_count", {
