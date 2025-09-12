@@ -16,9 +16,10 @@ export default function Members() {
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b">
-                <th className="px-3 py-2 text-left">First</th>
-                <th className="px-3 py-2 text-left">Last</th>
-                <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-left">First Name</th>
+                <th className="px-3 py-2 text-left">Last Name</th>
+                <th className="px-3 py-2 text-left">Phone</th>
+                <th className="px-3 py-2 text-left">status</th>
               </tr>
             </thead>
             <tbody>

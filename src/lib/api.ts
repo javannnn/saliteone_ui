@@ -116,11 +116,11 @@ export async function deleteDoc(doctype: string, name: string) {
 }
 
 // Module lists (minimal fields)
-export type MemberRow = { name: string; first_name: string; last_name: string; status: string };
+export type MemberRow = { name: string; first_name: string; last_name: string; phone: string; status: string;};
 export async function listMembers() {
   const dt = encodeURIComponent("Member");
   const r = await api.get(`/resource/${dt}`, {
-    params: { fields: '["name","first_name","last_name","status"]', limit_page_length: 20 }
+    params: { fields: '["name","first_name","last_name","phone","status"]', limit_page_length: 30 }
   });
   return r.data.data as MemberRow[];
 }
