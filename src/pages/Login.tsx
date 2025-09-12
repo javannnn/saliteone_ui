@@ -24,6 +24,7 @@ export default function Login() {
     try {
       await login(email, password);
       const me = await whoami();
+      if (!me.user || me.user === "Guest") throw new Error("Session not established.");
       setSession({ name: me.user, full_name: me.full_name }, me.roles || []);
 
       // Bootstrap permissions for key doctypes

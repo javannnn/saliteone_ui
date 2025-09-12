@@ -34,16 +34,22 @@ export async function createProcess(input: { title: string; status?: string }) {
 }
 
 // Interceptors / Global handlers
+const SKIP_REDIRECT_KEY = "__skipAuthRedirect" as const;
+
 api.interceptors.response.use(
   (r) => r,
   (err) => {
+    const s = err?.response?.status;
     if (!err?.response) {
       toast.error("Network error");
       return Promise.reject(err);
     }
-    if (err.response.status === 401) {
+    const skip = err?.config && (err.config as any)[SKIP_REDIRECT_KEY];
+    if (!skip && (s === 401 || s === 403)) {
       try { localStorage.removeItem("auth"); } catch {}
-      window.location.href = "/";
+      if (window.location.pathname !== "/") {
+        window.location.href = "/";
+      }
     }
     return Promise.reject(err);
   }
@@ -61,7 +67,7 @@ export async function login(usr: string, pwd: string) {
 
 export type WhoAmI = { user: string; full_name: string; roles: string[] };
 export async function whoami(): Promise<WhoAmI> {
-  const r = await api.get("/method/salitemiret.api.auth.whoami");
+  const r = await api.get("/method/salitemiret.api.auth.whoami", { [SKIP_REDIRECT_KEY]: true } as any);
   return (r.data?.message ?? r.data) as WhoAmI;
 }
 
