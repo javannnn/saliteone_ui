@@ -1,83 +1,191 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ping, getMyTaskCount, getPendingApprovalsCount, getRecentActivity, getProcessStatusBuckets } from "@/lib/api";
-import { Card } from "@/components/ui/card";
-import Spinner from "@/components/ui/spinner";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
+import Avatar from "@mui/material/Avatar";
+import Divider from "@mui/material/Divider";
+import Skeleton from "@mui/material/Skeleton";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import RuleIcon from "@mui/icons-material/Rule";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+
+import {
+  ping,
+  getMyTaskCount,
+  getPendingApprovalsCount,
+  getRecentActivity,
+  getProcessStatusBuckets,
+  type RecentItem,
+} from "@/lib/api";
 import { useAuth } from "@/stores/auth";
-import { useUI } from "@/stores/ui";
-import { t } from "@/lib/i18n";
-import { fmt } from "@/lib/utils";
+
+function Card({ title, icon, value, children }: { title: string; icon: React.ReactNode; value?: string | number; children?: React.ReactNode }) {
+  return (
+    <Paper elevation={0} sx={{ p: 2.5, border: (t) => `1px solid ${t.palette.divider}` }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+        <Typography variant="overline" color="text.secondary">{title}</Typography>
+        <Avatar sx={{ bgcolor: "primary.main", width: 32, height: 32 }}>{icon}</Avatar>
+      </Stack>
+      {value !== undefined ? (
+        <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}>{value}</Typography>
+      ) : children}
+    </Paper>
+  );
+}
+
+function StatusChip({ label }: { label: string }) {
+  const color =
+    /done|approved|complete/i.test(label) ? "success" :
+    /pending|review/i.test(label) ? "warning" :
+    /open|new/i.test(label) ? "info" : "default";
+  return <Chip label={label} size="small" color={color as any} />;
+}
+
+function formatTime(ts: string) {
+  try { return new Date(ts).toLocaleString(); } catch { return ts; }
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { locale } = useUI();
 
-  const pingQ = useQuery({ queryKey: ["ping"], queryFn: ping });
-  const tasksQ = useQuery({ queryKey: ["my_tasks"], queryFn: getMyTaskCount });
-  const approvalsQ = useQuery({ queryKey: ["approvals"], queryFn: getPendingApprovalsCount });
-  const recentQ = useQuery({ queryKey: ["recent_activity"], queryFn: () => getRecentActivity(5) });
-  const bucketsQ = useQuery({ queryKey: ["process_buckets"], queryFn: getProcessStatusBuckets });
+  const qPing = useQuery({ queryKey: ["ping"], queryFn: ping });
+  const qTasks = useQuery({ queryKey: ["me", "tasks"], queryFn: getMyTaskCount });
+  const qApprovals = useQuery({ queryKey: ["approvals", "pending"], queryFn: getPendingApprovalsCount });
+  const qRecent = useQuery({ queryKey: ["processes", "recent"], queryFn: () => getRecentActivity(8) });
+  const qBuckets = useQuery({ queryKey: ["processes", "buckets"], queryFn: getProcessStatusBuckets });
 
-  const showApprovals = (user?.roles || []).some(r => ["Approver","Finance","Administrator","System Manager","Admin"].includes(r));
+  const chartData = useMemo(() => {
+    const arr = (qRecent.data || []) as RecentItem[];
+    const bucket = new Map<string, number>();
+    for (const r of arr) {
+      const d = new Date(r.modified);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      bucket.set(key, (bucket.get(key) || 0) + 1);
+    }
+    return Array.from(bucket, ([date, count]) => ({ date, count })).sort((a,b) => a.date.localeCompare(b.date));
+  }, [qRecent.data]);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">{t("dashboard", locale)}</h1>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
+      {/* Hero */}
+      <Paper elevation={0} sx={{ p: 3, mb: 3, border: (t) => `1px solid ${t.palette.divider}`,
+        background: (t) => t.palette.mode === "dark"
+          ? "linear-gradient(135deg, rgba(14,87,208,.2), rgba(103,80,164,.15))"
+          : "linear-gradient(135deg, rgba(14,87,208,.08), rgba(103,80,164,.06))" }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: .5 }}>Welcome{user ? `, ${user.full_name}` : ""} 👋</Typography>
+        <Typography color="text.secondary">Here’s what’s happening across your workspace today.</Typography>
+      </Paper>
 
-      {/* KPIs */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-4">
-          <div className="text-sm text-zinc-500">{t("my_tasks", locale)}</div>
-          <div className="mt-2 text-3xl font-semibold">
-            {tasksQ.isLoading ? <div className="h-8 w-20 animate-pulse rounded bg-zinc-800/20"/> : tasksQ.data}
-          </div>
-        </Card>
-        {showApprovals && (
-          <Card className="p-4">
-            <div className="text-sm text-zinc-500">{t("approvals", locale)}</div>
-            <div className="mt-2 text-3xl font-semibold">
-              {approvalsQ.isLoading ? <div className="h-8 w-20 animate-pulse rounded bg-zinc-800/20"/> : approvalsQ.data}
-            </div>
+      <Grid container spacing={2}>
+        {/* KPIs */}
+        <Grid item xs={12} md={4}>
+          <Card title="My Open Tasks" icon={<AssignmentTurnedInIcon fontSize="small" />} value={
+            qTasks.isLoading ? (Skeleton({ width: 80, height: 42 }) as any) : qTasks.data ?? 0
+          }/>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card title="Pending Approvals" icon={<RuleIcon fontSize="small" />} value={
+            qApprovals.isLoading ? (Skeleton({ width: 80, height: 42 }) as any) : qApprovals.data ?? 0
+          }/>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card title="Backend Health" icon={<TimelineIcon fontSize="small" />}>
+            {qPing.isLoading ? (
+              <Skeleton width={160} height={28} />
+            ) : (
+              <Typography sx={{ fontWeight: 600 }} color="success.main">OK</Typography>
+            )}
           </Card>
-        )}
-        <Card className="p-4 sm:col-span-2">
-          <div className="text-sm text-zinc-500">Open Processes by Status</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {bucketsQ.isLoading && <div className="h-6 w-40 animate-pulse rounded bg-zinc-800/20"/>}
-            {!bucketsQ.isLoading && bucketsQ.data && Object.entries(bucketsQ.data).map(([k,v]) => (
-              <div key={k} className="rounded-full border px-3 py-1 text-sm">
-                {k}: <span className="font-semibold">{v}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+        </Grid>
 
-      {/* Recent Activity */}
-      <Card>
-        <div className="mb-2 text-sm text-zinc-500">{t("recent", locale)}</div>
-        {recentQ.isLoading && <div className="h-6 w-48 animate-pulse rounded bg-zinc-800/20"/>}
-        {recentQ.isError && <div className="text-red-600">Failed to load.</div>}
-        {recentQ.data && (
-          <ul className="divide-y">
-            {recentQ.data.map(item => (
-              <li key={item.name} className="flex items-center justify-between py-2 text-sm">
-                <div>
-                  <div className="font-medium">{item.title}</div>
-                  <div className="text-zinc-500">{item.status}</div>
-                </div>
-                <div className="text-zinc-500">{fmt(item.modified)}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+        {/* Status buckets */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={0} sx={{ p: 2.5, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+              <Typography variant="overline" color="text.secondary">Open Processes by Status</Typography>
+              <Stack direction="row" spacing={1}>
+                <Chip icon={<PendingActionsIcon />} label="Pending" size="small" />
+                <Chip icon={<DoneAllIcon />} label="Done" size="small" />
+                <Chip icon={<CheckCircleIcon />} label="In Progress" size="small" />
+              </Stack>
+            </Stack>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              {qBuckets.isLoading && <>
+                <Skeleton variant="rounded" width={120} height={32} />
+                <Skeleton variant="rounded" width={100} height={32} />
+                <Skeleton variant="rounded" width={140} height={32} />
+              </>}
+              {qBuckets.data && qBuckets.data.map((b) => (
+                <Chip key={b.status} label={`${b.status}: ${b.count}`} variant="outlined" />
+              ))}
+            </Stack>
+          </Paper>
+        </Grid>
 
-      {/* Backend status */}
-      <Card>
-        {pingQ.isLoading ? <div className="flex items-center gap-2"><Spinner /> <span>Checking backend…</span></div> :
-         pingQ.isError ? <div className="text-red-600">Backend unreachable.</div> :
-         <div className="text-green-700">Backend OK: {JSON.stringify(pingQ.data)}</div>}
-      </Card>
-    </div>
+        {/* Activity sparkline */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={0} sx={{ p: 2.5, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <Typography variant="overline" color="text.secondary">Recent Activity (by day)</Typography>
+            <Box sx={{ height: 200, mt: 1 }}>
+              {qRecent.isLoading ? (
+                <Skeleton variant="rounded" width="100%" height="100%" />
+              ) : chartData.length === 0 ? (
+                <Box sx={{ display:"grid", placeItems:"center", height: "100%" }}>
+                  <Typography color="text.secondary">No recent changes</Typography>
+                </Box>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ left: 8, right: 8 }}>
+                    <defs>
+                      <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0B57D0" stopOpacity={0.45}/>
+                        <stop offset="95%" stopColor="#0B57D0" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.25}/>
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }}/>
+                    <YAxis allowDecimals={false} width={28}/>
+                    <Tooltip />
+                    <Area type="monotone" dataKey="count" stroke="#0B57D0" fill="url(#g1)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Recent list */}
+        <Grid item xs={12}>
+          <Paper elevation={0} sx={{ p: 2.5, border: (t) => `1px solid ${t.palette.divider}` }}>
+            <Typography variant="overline" color="text.secondary">Recent Workflow Updates</Typography>
+            <Divider sx={{ my: 1.5 }} />
+            <Stack spacing={1.25}>
+              {qRecent.isLoading && (<>
+                <Skeleton height={28} />
+                <Skeleton height={28} />
+                <Skeleton height={28} />
+              </>)}
+              {qRecent.data?.map((r) => (
+                <Stack key={r.name} direction="row" alignItems="center" spacing={1.5} sx={{ minHeight: 28 }}>
+                  <Typography sx={{ fontWeight: 600 }}>{r.title}</Typography>
+                  <StatusChip label={r.status || "Unknown"} />
+                  <Box sx={{ flex: 1 }} />
+                  <Typography variant="body2" color="text.secondary">{formatTime(r.modified)}</Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
   );
 }
