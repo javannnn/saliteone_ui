@@ -59,7 +59,11 @@ function formatTime(ts: string) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  const isApprover = useMemo(
+    () => (roles || []).some((r) => r === "Admin" || r === "Finance Admin" || r === "User Management Admin"),
+    [roles]
+  );
 
   const qPing = useQuery({ queryKey: ["ping"], queryFn: ping });
   const qTasks = useQuery({ queryKey: ["me", "tasks"], queryFn: getMyTaskCount });
@@ -101,7 +105,7 @@ export default function Dashboard() {
                 </Box>
                 <Stack direction="row" spacing={1}>
                   <Button variant="contained" component={RouterLink} to="/volunteers">Open Volunteers</Button>
-                  {(useAuth().roles||[]).some(r=>["Admin","User Management Admin","Volunteer Admin"].includes(r)) && (
+                  {isApprover && (
                     <Button variant="outlined" component={RouterLink} to="/volunteers">Admin Tools</Button>
                   )}
                 </Stack>
