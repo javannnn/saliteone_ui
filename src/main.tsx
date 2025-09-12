@@ -2,7 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import "@fontsource-variable/roboto-flex";
 import { initAuthStorageSync } from "@/lib/session";
 
 initAuthStorageSync();
