@@ -287,4 +287,33 @@ export async function listMyToDos(limit = 20) {
   return (r.data.message || []) as ToDoLite[];
 }
 
+// List ToDos for specific user (by allocated_to); fallback to owner if server expects it
+export async function listToDosFor(email: string, limit = 20) {
+  const r = await api.get("/method/frappe.client.get_list", {
+    params: {
+      doctype: "ToDo",
+      fields: JSON.stringify(["name","status","date","reference_type","reference_name","description"]),
+      filters: JSON.stringify({ allocated_to: email, status: "Open" }),
+      limit_page_length: limit,
+      order_by: "modified desc"
+    },
+    __skipAuthRedirect: true as any
+  } as any);
+  return (r.data.message || []) as ToDoLite[];
+}
+
+// Create ToDo assigned to user
+export async function createToDo(params: { allocated_to: string; description: string; reference_type?: string; reference_name?: string; status?: string }) {
+  const payload = {
+    doctype: "ToDo",
+    allocated_to: params.allocated_to,
+    description: params.description,
+    reference_type: params.reference_type,
+    reference_name: params.reference_name,
+    status: params.status || "Open"
+  } as any;
+  const r = await api.post("/resource/ToDo", payload);
+  return r.data;
+}
+
 // (removed duplicate interceptor)

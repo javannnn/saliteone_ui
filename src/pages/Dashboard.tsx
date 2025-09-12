@@ -88,6 +88,25 @@ export default function Dashboard() {
       </Paper>
 
       <Grid container spacing={2}>
+        {/* Get Started panel when empty */}
+        {((qTasks.data ?? 0) === 0 && (qApprovals.data ?? 0) === 0 && (!qBuckets.data || qBuckets.data.length === 0)) && (
+          <Grid item xs={12}>
+            <Paper elevation={0} sx={{ p: 2.5, border: (t)=>`1px solid ${t.palette.divider}` }}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "start", sm: "center" }} justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: .5 }}>Get started</Typography>
+                  <Typography color="text.secondary">Create your volunteer profile or open admin tools to add groups and volunteers.</Typography>
+                </Box>
+                <Stack direction="row" spacing={1}>
+                  <Button variant="contained" href="/volunteers">Open Volunteers</Button>
+                  {(useAuth().roles||[]).some(r=>["Admin","User Management Admin","Volunteer Admin"].includes(r)) && (
+                    <Button variant="outlined" href="/volunteers">Admin Tools</Button>
+                  )}
+                </Stack>
+              </Stack>
+            </Paper>
+          </Grid>
+        )}
         {/* KPIs */}
         <Grid item xs={12} md={4}>
           <Card title="My Open Tasks" icon={<AssignmentTurnedInIcon fontSize="small" />}>

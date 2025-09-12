@@ -7,6 +7,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -37,6 +39,59 @@ import {
   listVolunteers, listMyToDos, type Volunteer, type VolunteerGroup
 } from "@/lib/api";
 import { toast } from "sonner";
+
+function AssignTaskButton({ volunteer }: { volunteer: Volunteer }) {
+  const [open, setOpen] = useState(false);
+  const [desc, setDesc] = useState("");
+  const [refType, setRefType] = useState("");
+  const [refName, setRefName] = useState("");
+  const [email, setEmail] = useState<string>("");
+  const qc = useQueryClient();
+
+  // fetch member email on open
+  useEffect(() => {
+    if (open && volunteer.member) {
+      (async () => {
+        try {
+          const m = await getDoc<any>("Member", volunteer.member, ["email"]);
+          setEmail(m?.email || "");
+        } catch { setEmail(""); }
+      })();
+    }
+  }, [open, volunteer.member]);
+
+  const mAssign = useMutation({
+    mutationFn: async () => {
+      if (!email || !desc.trim()) throw new Error("Missing email or description");
+      await createToDo({ allocated_to: email, description: desc.trim(), reference_type: refType || undefined, reference_name: refName || undefined });
+    },
+    onSuccess: () => { toast.success("Task assigned"); setOpen(false); setDesc(""); setRefType(""); setRefName(""); },
+    onError: e => toast.error(extractErr(e))
+  });
+
+  return (
+    <>
+      <Button size="small" startIcon={<AssignmentIcon/>} onClick={()=>setOpen(true)}>Assign</Button>
+      <Dialog open={open} onClose={()=>setOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Assign Task</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 0.5 }}>
+            <TextField label="Assign to (email)" value={email} InputProps={{ readOnly: true }} />
+            <TextField label="Description" value={desc} onChange={e=>setDesc(e.target.value)} multiline minRows={2} />
+            <Stack direction="row" spacing={1}>
+              <TextField label="Reference Type" value={refType} onChange={e=>setRefType(e.target.value)} placeholder="Service Request" />
+              <TextField label="Reference Name" value={refName} onChange={e=>setRefName(e.target.value)} placeholder="SR-..." />
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={()=>setOpen(false)}>Cancel</Button>
+          <Button variant="contained" startIcon={<SaveIcon/>} disabled={!desc.trim() || mAssign.isPending} onClick={()=>mAssign.mutate()}>Assign</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
 
 export default function Volunteers() {
   const { roles, user } = useAuth();
@@ -87,7 +142,14 @@ function VolunteerSelfService() {
     onError: e => toast.error(extractErr(e))
   });
 
-  const qToDos = useQuery({ queryKey: ["todos","me"], queryFn: () => listMyToDos(20) });
+  const qToDos = useQuery({
+    queryKey: ["todos","me", email],
+    queryFn: async () => {
+      if (!email) return [];
+      return listToDosFor(email, 20);
+    },
+    enabled: !!email
+  });
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -240,14 +302,21 @@ function VolunteerAdmin() {
                       <TableCell sx={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }}>{v.name}</TableCell>
                       <TableCell>{v.member}</TableCell>
                       <TableCell sx={{ minWidth: 160 }}>
-                        <TextField
+                        <Select
                           size="small"
+                          displayEmpty
                           defaultValue={v.group || ""}
-                          onBlur={(e)=>{
-                            const val = e.target.value;
+                          onChange={(e)=>{
+                            const val = e.target.value as string;
                             if (val !== (v.group||"")) mUpdateVol.mutate({ id: v.name, patch: { group: val } });
                           }}
-                        />
+                          sx={{ minWidth: 160 }}
+                        >
+                          <MenuItem value=""><em>None</em></MenuItem>
+                          {(qGroups.data||[]).map(g => (
+                            <MenuItem key={g.name} value={g.group_name}>{g.group_name}</MenuItem>
+                          ))}
+                        </Select>
                       </TableCell>
                       <TableCell sx={{ minWidth: 240 }}>
                         <TextField
@@ -261,6 +330,7 @@ function VolunteerAdmin() {
                         />
                       </TableCell>
                       <TableCell align="right">
+                        <AssignTaskButton volunteer={v} />
                         <IconButton color="error" onClick={()=>mDeleteVol.mutate(v.name)} title="Delete"><DeleteIcon/></IconButton>
                       </TableCell>
                     </TableRow>
