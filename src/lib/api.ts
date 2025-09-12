@@ -8,20 +8,7 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" }
 });
 
-// Auth helpers
-export async function login(usr: string, pwd: string) {
-  const body = new URLSearchParams();
-  body.set("usr", usr);
-  body.set("pwd", pwd);
-  return api.post("/method/login", body, {
-    headers: { "Content-Type": "application/x-www-form-urlencoded" }
-  });
-}
-
-export async function getLoggedUser() {
-  const r = await api.get("/method/frappe.auth.get_logged_user");
-  return r.data.message as string;
-}
+// (removed duplicate early auth helpers)
 
 export async function ping() {
   const r = await api.get("/method/ping");
@@ -215,16 +202,4 @@ export async function listSchoolEnrollments() {
   return r.data.data as SchoolEnrollmentRow[];
 }
 
-// Interceptors
-api.interceptors.response.use(
-  (r) => r,
-  (err) => {
-    if (err?.response?.status === 401) {
-      window.location.href = "/";
-    }
-    if (!err?.response) {
-      toast.error("Network error");
-    }
-    return Promise.reject(err);
-  }
-);
+// (removed duplicate interceptor)
