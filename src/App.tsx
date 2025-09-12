@@ -26,8 +26,12 @@ function Authed({ children }: { children: JSX.Element }) {
     (async () => {
       try {
         const m = await whoami();
-        if (!user || user.name !== m.user) {
-          setSession({ name: m.user, full_name: m.full_name }, m.roles || []);
+        if (m.user && m.user !== "Guest") {
+          if (!user || user.name !== m.user) {
+            setSession({ name: m.user, full_name: m.full_name }, m.roles || []);
+          }
+        } else {
+          clear();
         }
       } catch {
         clear();

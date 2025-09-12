@@ -37,11 +37,12 @@ export async function createProcess(input: { title: string; status?: string }) {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
+    const s = err?.response?.status;
     if (!err?.response) {
       toast.error("Network error");
       return Promise.reject(err);
     }
-    if (err.response.status === 401) {
+    if (s === 401 || s === 403) {
       try { localStorage.removeItem("auth"); } catch {}
       window.location.href = "/";
     }
