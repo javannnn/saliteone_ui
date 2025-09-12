@@ -35,9 +35,11 @@ function Card({ title, icon, value, children }: { title: string; icon: React.Rea
         <Typography variant="overline" color="text.secondary">{title}</Typography>
         <Avatar sx={{ bgcolor: "primary.main", width: 32, height: 32 }}>{icon}</Avatar>
       </Stack>
-      {value !== undefined ? (
-        <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}>{value}</Typography>
-      ) : children}
+      {children ?? (
+        value !== undefined ? (
+          <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}>{value}</Typography>
+        ) : null
+      )}
     </Paper>
   );
 }
@@ -88,14 +90,22 @@ export default function Dashboard() {
       <Grid container spacing={2}>
         {/* KPIs */}
         <Grid item xs={12} md={4}>
-          <Card title="My Open Tasks" icon={<AssignmentTurnedInIcon fontSize="small" />} value={
-            qTasks.isLoading ? (Skeleton({ width: 80, height: 42 }) as any) : qTasks.data ?? 0
-          }/>
+          <Card title="My Open Tasks" icon={<AssignmentTurnedInIcon fontSize="small" />}>
+            {qTasks.isLoading ? (
+              <Skeleton width={80} height={42} />
+            ) : (
+              <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}>{qTasks.data ?? 0}</Typography>
+            )}
+          </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card title="Pending Approvals" icon={<RuleIcon fontSize="small" />} value={
-            qApprovals.isLoading ? (Skeleton({ width: 80, height: 42 }) as any) : qApprovals.data ?? 0
-          }/>
+          <Card title="Pending Approvals" icon={<RuleIcon fontSize="small" />}>
+            {qApprovals.isLoading ? (
+              <Skeleton width={80} height={42} />
+            ) : (
+              <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}>{qApprovals.data ?? 0}</Typography>
+            )}
+          </Card>
         </Grid>
         <Grid item xs={12} md={4}>
           <Card title="Backend Health" icon={<TimelineIcon fontSize="small" />}>
