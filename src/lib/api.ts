@@ -316,4 +316,16 @@ export async function createToDo(params: { allocated_to: string; description: st
   return r.data;
 }
 
+// Public: request volunteer onboarding
+export async function requestVolunteer(input: {
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  skills?: string;
+}) {
+  const r = await api.post("/method/salitemiret.api.public.request_volunteer", input);
+  return r.data?.message ?? r.data;
+}
+
 // (removed duplicate interceptor)

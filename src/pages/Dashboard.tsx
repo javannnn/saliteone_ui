@@ -18,7 +18,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 
 import {
   ping,
@@ -60,6 +60,8 @@ function formatTime(ts: string) {
 
 export default function Dashboard() {
   const { user, roles } = useAuth();
+  const nav = useNavigate();
+  const isVolunteer = useMemo(() => (roles || []).includes("Volunteer"), [roles]);
   const isApprover = useMemo(
     () => (roles || []).some((r) => r === "Admin" || r === "Finance Admin" || r === "User Management Admin"),
     [roles]
@@ -104,9 +106,11 @@ export default function Dashboard() {
                   <Typography color="text.secondary">Create your volunteer profile or open admin tools to add groups and volunteers.</Typography>
                 </Box>
                 <Stack direction="row" spacing={1}>
-                  <Button variant="contained" component={RouterLink} to="/volunteers">Open Volunteers</Button>
-                  {isApprover && (
-                    <Button variant="outlined" component={RouterLink} to="/volunteers">Admin Tools</Button>
+                  {isVolunteer && (
+                    <Button variant="contained" size="small" onClick={() => nav("/volunteers")}>Set up your volunteer profile</Button>
+                  )}
+                  {isApprover && !isVolunteer && (
+                    <Button variant="outlined" component={RouterLink} to="/volunteers">Open Volunteers</Button>
                   )}
                 </Stack>
               </Stack>
