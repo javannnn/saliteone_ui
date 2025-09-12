@@ -29,6 +29,7 @@ import { ThemeToggleButton } from "@/theme";
 import { useAuth } from "@/stores/auth";
 import { useUI } from "@/stores/ui";
 import { logout } from "@/lib/api";
+import { t } from "@/lib/i18n";
 
 const DRAWER_W = 280;
 const RAIL_W = 72;
@@ -73,7 +74,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
             sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}
           >
             <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-            {navOpen && <ListItemText primary={item.label} />}
+            {navOpen && <ListItemText primary={t(item.label.toLowerCase() as any, locale)} />}
           </ListItemButton>
         ))}
       </List>

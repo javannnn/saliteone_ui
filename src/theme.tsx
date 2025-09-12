@@ -59,11 +59,13 @@ export function ThemeContainer({ children }: PropsWithChildren) {
 
 export function ThemeToggleButton() {
   const { theme, setTheme } = useUI();
+  const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const cycle = () => {
-    if (theme === "system") setTheme("light");
-    else if (theme === "light") setTheme("dark");
-    else setTheme("system");
+    // Always flip the visible mode on click; avoid a no-op when theme is 'system'
+    const currentIsDark = theme === "dark" || (theme === "system" && prefersDark);
+    setTheme(currentIsDark ? "light" : "dark");
   };
-  const icon = theme === "dark" ? <DarkModeIcon /> : <LightModeIcon />;
+  const currentIsDark = theme === "dark" || (theme === "system" && prefersDark);
+  const icon = currentIsDark ? <DarkModeIcon /> : <LightModeIcon />;
   return <IconButton color="inherit" onClick={cycle} title={`Theme: ${theme}`}>{icon}</IconButton>;
 }
