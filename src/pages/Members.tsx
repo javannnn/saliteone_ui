@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listMembers } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import Spinner from "@/components/ui/spinner";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function Members() {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export default function Members() {
         {data && (
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b">
+              <tr className="border-b bg-gray-50">
                 <th className="px-3 py-2 text-left">First Name</th>
                 <th className="px-3 py-2 text-left">Last Name</th>
                 <th className="px-3 py-2 text-left">Phone</th>
@@ -44,14 +44,19 @@ export default function Members() {
             </thead>
             <tbody>
               {data.map((m) => (
-                <tr key={m.name} className="border-b">
+                <tr
+                  key={m.name}
+                  className="border-b hover:bg-blue-100 transition-colors duration-200"
+                >
                   <td className="px-3 py-2">{m.first_name}</td>
                   <td className="px-3 py-2">{m.last_name}</td>
                   <td className="px-3 py-2">{m.phone}</td>
                   <td className="px-3 py-2 text-zinc-500">{m.status}</td>
                   <td className="px-3 py-2">
                     <button
-                      onClick={() => navigate(`/members/${encodeURIComponent(m.name)}`)}
+                      onClick={() =>
+                        navigate(`/members/${encodeURIComponent(m.name)}`)
+                      }
                       className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                     >
                       Open
