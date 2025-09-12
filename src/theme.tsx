@@ -1,14 +1,13 @@
 import { PropsWithChildren, useMemo } from "react";
 import CssBaseline from "@mui/material/CssBaseline";
 import IconButton from "@mui/material/IconButton";
-import type { PaletteMode } from "@mui/material";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { useUI } from "@/stores/ui";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 
-function makeTheme(mode: PaletteMode) {
+function makeTheme(mode: "light" | "dark") {
   return createTheme({
     palette: {
       mode,
@@ -21,7 +20,7 @@ function makeTheme(mode: PaletteMode) {
     shape: { borderRadius: 12 },
     typography: {
       fontFamily: [
-        "Inter", "Roboto", "system-ui", "-apple-system", "Segoe UI",
+        '"Roboto Flex"', "Inter", "system-ui", "-apple-system", "Segoe UI",
         "Helvetica Neue", "Arial", "Noto Sans", "sans-serif"
       ].join(","),
       h1: { fontWeight: 700, letterSpacing: "-0.4px" },
@@ -37,7 +36,7 @@ function makeTheme(mode: PaletteMode) {
 export function ThemeContainer({ children }: PropsWithChildren) {
   const { theme } = useUI();
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
-  const mode: PaletteMode = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
+  const mode = (theme === "system" ? (prefersDark ? "dark" : "light") : theme) as "light" | "dark";
   const themeObj = useMemo(() => makeTheme(mode), [mode]);
   return (
     <ThemeProvider theme={themeObj}>
