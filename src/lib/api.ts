@@ -104,15 +104,18 @@ export async function getRecentActivity(limit = 5) {
   return r.data.data as RecentItem[];
 }
 
-export async function getProcessStatusBuckets() {
+export async function getProcessStatusBuckets(): Promise<Array<{ status: string; count: number }>> {
   const doctype = encodeURIComponent("Workflow Process");
   const r = await api.get(`/resource/${doctype}`, {
-    params: { fields: '["name","status"]', limit_page_length: 1000 }
+    params: { fields: JSON.stringify(["status"]), limit_page_length: 500, order_by: "modified desc" }
   });
-  const rows = r.data.data as Array<{ status: string }>;
-  const buckets: Record<string, number> = {};
-  for (const row of rows) buckets[row.status] = (buckets[row.status] || 0) + 1;
-  return buckets;
+  const rows = r.data.data as Array<{ status?: string }>;
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    const key = row.status || "Unknown";
+    map.set(key, (map.get(key) || 0) + 1);
+  }
+  return Array.from(map, ([status, count]) => ({ status, count }));
 }
 
 // Permissions
