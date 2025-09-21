@@ -5,7 +5,13 @@ import Button from "@/components/ui/button";
 // avoid importing `api` here to prevent collisions
 import { useAuth } from "@/stores/auth";
 import { useUI } from "@/stores/ui";
-import { bootstrapPermissions, login, getLoggedUser } from "@/lib/api";
+import { bootstrapPermissions, login, whoami } from "@/lib/api";
+import { pickHomeForRoles } from "@/lib/roles";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import Link from "@mui/material/Link";
+import Stack from "@mui/material/Stack";
+import Divider from "@mui/material/Divider";
+import Typography from "@mui/material/Typography";
 import { Card } from "@/components/ui/card";
 
 export default function Login() {
@@ -13,21 +19,17 @@ export default function Login() {
   const [password,setPassword]=useState("");
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState<string|null>(null);
-  const { setUser } = useAuth();
+  const { setSession } = useAuth();
   const { setPerms } = useUI();
+  const nav = useNavigate();
 
   async function submit() {
     setBusy(true); setError(null);
     try {
       await login(email, password);
-      const userId = await getLoggedUser();
-      let roles: string[] = [];
-      try {
-        const resp = await fetch("/api/method/frappe.get_roles");
-        const data = await resp.json();
-        roles = data?.message || [];
-      } catch {}
-      setUser({ name: userId, full_name: email, roles });
+      const me = await whoami();
+      if (!me.user || me.user === "Guest") throw new Error("Session not established.");
+      setSession({ name: me.user, full_name: me.full_name }, me.roles || []);
 
       // Bootstrap permissions for key doctypes
       const doctypes = [
@@ -35,6 +37,7 @@ export default function Login() {
       ];
       const perms = await bootstrapPermissions(doctypes);
       setPerms(perms);
+      nav(pickHomeForRoles(me.roles || []), { replace: true });
     } catch (e:any) {
       console.error(e?.response || e);
       setError("Login failed: " + (e?.response?.data?.message || e?.message));
@@ -59,6 +62,15 @@ export default function Login() {
           {error && <div className="text-sm text-red-600">{error}</div>}
           <Button onClick={submit} disabled={busy}>{busy?"Signing in…":"Sign in"}</Button>
         </div>
+        <Stack spacing={1} sx={{ mt: 2, alignItems: "center" }}>
+          <Divider flexItem />
+          <Typography variant="body2" color="text.secondary">
+            New here?{" "}
+            <Link component={RouterLink} to="/register/volunteer" underline="hover">
+              Become a volunteer
+            </Link>
+          </Typography>
+        </Stack>
       </Card>
     </div>
   );
