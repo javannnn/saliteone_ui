@@ -6,6 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Processes from "@/pages/Processes";
 import Members from "@/pages/Members";
+import MemberForm from "@/pages/MemberForm"; // <-- add this
 import Payments from "@/pages/Payments";
 import Sponsorships from "@/pages/Sponsorships";
 import Newcomers from "@/pages/Newcomers";
@@ -13,7 +14,6 @@ import Volunteers from "@/pages/Volunteers";
 import Media from "@/pages/Media";
 import Schools from "@/pages/Schools";
 import ProcessDetail from "@/pages/ProcessDetail";
-import MemberDetail from "@/pages/MemberDetail";
 import RegisterVolunteer from "@/pages/RegisterVolunteer";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
@@ -48,8 +48,12 @@ const router = createBrowserRouter([
   { path: "/", element: <AppLayout><Authed><Dashboard /></Authed></AppLayout> },
   { path: "/processes", element: <AppLayout><Authed><Processes /></Authed></AppLayout> },
   { path: "/processes/:name", element: <AppLayout><Authed><ProcessDetail /></Authed></AppLayout> },
-  { path: "/members/:name", element: <AppLayout><Authed><MemberDetail /></Authed></AppLayout> },
+  
+  // Members routes
   { path: "/members", element: <AppLayout><Authed><Members /></Authed></AppLayout> },
+  { path: "/members/new", element: <AppLayout><Authed><MemberForm /></Authed></AppLayout> },
+  { path: "/members/:memberName", element: <AppLayout><Authed><MemberForm /></Authed></AppLayout> },
+
   { path: "/payments", element: <AppLayout><Authed><Payments /></Authed></AppLayout> },
   { path: "/sponsorships", element: <AppLayout><Authed><Sponsorships /></Authed></AppLayout> },
   { path: "/newcomers", element: <AppLayout><Authed><Newcomers /></Authed></AppLayout> },

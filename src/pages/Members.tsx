@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { listMembers } from "@/lib/api";
+import { listMembers, MemberRow } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import Spinner from "@/components/ui/spinner";
 import { useNavigate } from "react-router-dom";
-import { useState, useMemo } from "react"; // only added for filters, no extra packages
+import { useState, useMemo } from "react";
 
 export default function Members() {
   const navigate = useNavigate();
@@ -21,11 +21,12 @@ export default function Members() {
 
   const filteredData = useMemo(() => {
     if (!data) return [];
-    return data.filter((m) =>
-      m.first_name.toLowerCase().includes(filters.first_name.toLowerCase()) &&
-      m.last_name.toLowerCase().includes(filters.last_name.toLowerCase()) &&
-      m.phone.toLowerCase().includes(filters.phone.toLowerCase()) &&
-      m.status.toLowerCase().includes(filters.status.toLowerCase())
+    return data.filter(
+      (m) =>
+        m.first_name.toLowerCase().includes(filters.first_name.toLowerCase()) &&
+        m.last_name.toLowerCase().includes(filters.last_name.toLowerCase()) &&
+        m.phone.toLowerCase().includes(filters.phone.toLowerCase()) &&
+        m.status.toLowerCase().includes(filters.status.toLowerCase())
     );
   }, [data, filters]);
 
@@ -34,7 +35,7 @@ export default function Members() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Members</h1>
         <button
-          onClick={() => navigate("/members/create")}
+          onClick={() => navigate("/members/new")}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Create Member
@@ -48,7 +49,8 @@ export default function Members() {
             <span>Loading…</span>
           </div>
         )}
-        {isError && <div className="text-red-600">Failed to load.</div>}
+        {isError && <div className="text-red-600">Failed to load members.</div>}
+
         {data && (
           <table className="min-w-full text-sm">
             <thead>
@@ -99,16 +101,9 @@ export default function Members() {
                 </th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
-              <tr className="border-b bg-gray-100">
-                <th className="px-3 py-2 text-left">First Name</th>
-                <th className="px-3 py-2 text-left">Last Name</th>
-                <th className="px-3 py-2 text-left">Phone</th>
-                <th className="px-3 py-2 text-left">Status</th>
-                <th className="px-3 py-2 text-left">Actions</th>
-              </tr>
             </thead>
             <tbody>
-              {filteredData.map((m) => (
+              {filteredData.map((m: MemberRow) => (
                 <tr
                   key={m.name}
                   className="border-b hover:bg-blue-100 transition-colors duration-200"

@@ -2,19 +2,28 @@ import axios from "axios";
 import { toast } from "sonner";
 
 export const api = axios.create({
-  // Use Vite dev proxy in development; production can serve under same origin
   baseURL: "/api",
   withCredentials: true,
-  headers: { "Content-Type": "application/json" }
+  headers: { "Content-Type": "application/json" },
 });
 
-// (removed duplicate early auth helpers)
+// ---------- Get full Member document ----------
+export async function getMember(name: string) {
+  return getDoc("Member", name);
+}
+// Generic create function
+export async function createDoc<T = any>(doctype: string, data: Record<string, any>) {
+  const r = await api.post(`/resource/${encodeURIComponent(doctype)}`, data);
+  return r.data.data as T;
+}
 
+// ---------- Ping ----------
 export async function ping() {
   const r = await api.get("/method/ping");
   return r.data;
 }
 
+// ---------- Workflow Process ----------
 export type Process = { name: string; title: string; status: string };
 export async function listProcesses() {
   const doctype = encodeURIComponent("Workflow Process");
@@ -33,7 +42,7 @@ export async function createProcess(input: { title: string; status?: string }) {
   return r.data.data as Process;
 }
 
-// Interceptors / Global handlers
+// ---------- Interceptors / Global handlers ----------
 const SKIP_REDIRECT_KEY = "__skipAuthRedirect" as const;
 
 api.interceptors.response.use(
@@ -55,7 +64,7 @@ api.interceptors.response.use(
   }
 );
 
-// Auth helpers
+// ---------- Auth helpers ----------
 export async function login(usr: string, pwd: string) {
   const body = new URLSearchParams();
   body.set("usr", usr);
@@ -72,11 +81,10 @@ export async function whoami(): Promise<WhoAmI> {
 }
 
 export async function logout() {
-  // Use GET to avoid CSRF issues in dev; mark to skip redirect handling
   await api.get("/method/logout", { [SKIP_REDIRECT_KEY]: true } as any);
 }
 
-// KPIs
+// ---------- KPIs ----------
 export async function getMyTaskCount() {
   const r = await api.get("/method/frappe.client.get_count", {
     params: { doctype: "ToDo", filters: JSON.stringify({ status: "Open" }) }
@@ -118,7 +126,7 @@ export async function getProcessStatusBuckets(): Promise<Array<{ status: string;
   return Array.from(map, ([status, count]) => ({ status, count }));
 }
 
-// Permissions
+// ---------- Permissions ----------
 export async function hasPermission(doctype: string, ptype = "read") {
   const r = await api.get("/method/frappe.has_permission", { params: { doctype, ptype } });
   return !!r.data.message;
@@ -131,7 +139,7 @@ export async function bootstrapPermissions(dts: string[]) {
   return Object.fromEntries(entries) as Record<string, boolean>;
 }
 
-// Generic CRUD helpers
+// ---------- Generic CRUD helpers ----------
 export async function getDoc<T = any>(doctype: string, name: string, fields?: string[]) {
   const r = await api.get(`/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
     params: fields ? { fields: JSON.stringify(fields) } : undefined
@@ -148,8 +156,8 @@ export async function deleteDoc(doctype: string, name: string) {
   await api.delete(`/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`);
 }
 
-// Module lists (minimal fields)
-export type MemberRow = { name: string; first_name: string; last_name: string; phone: string; status: string;};
+// ---------- Module lists ----------
+export type MemberRow = { name: string; first_name: string; last_name: string; phone: string; status: string; };
 export async function listMembers() {
   const dt = encodeURIComponent("Member");
   const r = await api.get(`/resource/${dt}`, {
@@ -158,6 +166,22 @@ export async function listMembers() {
   return r.data.data as MemberRow[];
 }
 
+// ---------- Member CRUD additions ----------
+export async function createMember(data: Record<string, any>) {
+  const r = await api.post(`/resource/Member`, data);
+  return r.data.data;
+}
+
+export async function updateMember(name: string, data: Record<string, any>) {
+  const r = await api.put(`/resource/Member/${encodeURIComponent(name)}`, data);
+  return r.data.data;
+}
+
+export async function deleteMember(name: string) {
+  await api.delete(`/resource/Member/${encodeURIComponent(name)}`);
+}
+
+// ---------- The rest of your existing code ----------
 export type PaymentRow = { name: string; member: string; amount: number; status: string };
 export async function listPayments() {
   const dt = encodeURIComponent("Payment");
@@ -187,7 +211,6 @@ export async function listNewcomers() {
 
 export type VolunteerRow = { name: string; member: string; group?: string };
 export async function listVolunteers() {
-  // Upgraded volunteer list with services and higher limit
   const dt = encodeURIComponent("Volunteer");
   const r = await api.get(`/resource/${dt}`, {
     params: { fields: JSON.stringify(["name","member","group","services"]), order_by: "modified desc", limit_page_length: 200 }
@@ -287,7 +310,6 @@ export async function listMyToDos(limit = 20) {
   return (r.data.message || []) as ToDoLite[];
 }
 
-// List ToDos for specific user (by allocated_to); fallback to owner if server expects it
 export async function listToDosFor(email: string, limit = 20) {
   const r = await api.get("/method/frappe.client.get_list", {
     params: {
@@ -302,7 +324,6 @@ export async function listToDosFor(email: string, limit = 20) {
   return (r.data.message || []) as ToDoLite[];
 }
 
-// Create ToDo assigned to user
 export async function createToDo(params: { allocated_to: string; description: string; reference_type?: string; reference_name?: string; status?: string }) {
   const payload = {
     doctype: "ToDo",
@@ -316,7 +337,7 @@ export async function createToDo(params: { allocated_to: string; description: st
   return r.data;
 }
 
-// Public: request volunteer onboarding
+// ---------- Public volunteer request ----------
 export async function requestVolunteer(input: {
   email: string;
   first_name: string;
@@ -327,5 +348,3 @@ export async function requestVolunteer(input: {
   const r = await api.post("/method/salitemiret.api.public.request_volunteer", input);
   return r.data?.message ?? r.data;
 }
-
-// (removed duplicate interceptor)
