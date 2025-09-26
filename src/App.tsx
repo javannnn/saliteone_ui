@@ -22,6 +22,7 @@ import Membership from "@/pages/Membership";
 import Requests from "@/pages/Requests";
 import TeamGroup from "@/pages/TeamGroup";
 import TeamApprovals from "@/pages/TeamApprovals";
+import TeamTasks from "@/pages/TeamTasks";
 import TeamReports from "@/pages/TeamReports";
 import FinanceDashboard from "@/pages/FinanceDashboard";
 import Reports from "@/pages/Reports";
@@ -92,6 +93,7 @@ const router = createBrowserRouter([
   { path: "/volunteers/:volunteerId", element: <AuthedLayout><VolunteerDetail /></AuthedLayout> },
   { path: "/volunteers/bulk-upload", element: <AuthedLayout><VolunteerBulkUpload /></AuthedLayout> },
   { path: "/team/group", element: <AuthedLayout><TeamGroup /></AuthedLayout> },
+  { path: "/team/tasks", element: <AuthedLayout><TeamTasks /></AuthedLayout> },
   { path: "/team/approvals", element: <AuthedLayout><TeamApprovals /></AuthedLayout> },
   { path: "/team/reports", element: <AuthedLayout><TeamReports /></AuthedLayout> },
   { path: "/finance", element: <AuthedLayout><FinanceDashboard /></AuthedLayout> },

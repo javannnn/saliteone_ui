@@ -13,6 +13,7 @@ import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
+import Chip from "@mui/material/Chip";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyMember, updateMyMember, listMyPayments, listMySponsorships, listMyFamily, upsertFamilyMember, deleteFamilyMember, getMyStatus, setMyTitheCommitment } from "@/lib/api";
@@ -66,8 +67,13 @@ export default function Membership() {
                 <TableBody>
                   {(famQ.data || []).map((row:any)=> (
                     <TableRow key={row.name}>
-                      <TableCell>
-                        <TextField defaultValue={row.full_name} size="small" onBlur={(e)=>muFam.mutate({ name: row.name, full_name: e.target.value })} />
+                      <TableCell sx={{ minWidth: 220 }}>
+                        <Stack spacing={0.5}>
+                          <TextField defaultValue={row.full_name} size="small" onBlur={(e)=>muFam.mutate({ name: row.name, full_name: e.target.value })} />
+                          {row.relation === "Child" && row.dob && daysUntil18(row.dob) > 0 && (
+                            <Chip size="small" label={`Turns 18 in ${humanizeDays(daysUntil18(row.dob))}`} color="warning" variant="outlined" />
+                          )}
+                        </Stack>
                       </TableCell>
                       <TableCell>
                         <TextField defaultValue={row.relation} size="small" onBlur={(e)=>muFam.mutate({ name: row.name, relation: e.target.value })} />
@@ -169,4 +175,22 @@ function isTurning18Today(dob: string) {
       eighteen.getDate() === today.getDate()
     );
   } catch { return false; }
+}
+
+function daysUntil18(dob: string) {
+  try {
+    const d = new Date(dob);
+    const today = new Date();
+    const eighteen = new Date(d.getFullYear() + 18, d.getMonth(), d.getDate());
+    const ms = eighteen.getTime() - new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    return Math.ceil(ms / (1000 * 60 * 60 * 24));
+  } catch { return 0; }
+}
+
+function humanizeDays(days: number) {
+  if (days <= 0) return "today";
+  if (days < 30) return `${days} days`;
+  const months = Math.floor(days / 30);
+  const rem = days % 30;
+  return rem > 0 ? `${months} mo ${rem} d` : `${months} months`;
 }

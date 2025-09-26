@@ -58,8 +58,9 @@ const NAV: ReadonlyArray<NavItem> = [
   { to: "/volunteers/bulk-upload", label: "Bulk Upload", icon: <UploadFileIcon />, rolesAllowed: ["Admin", "Volunteer Admin"] },
 
   // Team Leader specific
-  { to: "/team/group", label: "Group Management", icon: <GroupIcon />, rolesAllowed: ["Team Leader"] },
-  { to: "/team/approvals", label: "Approvals", icon: <PendingActionsIcon />, rolesAllowed: ["Team Leader"] },
+    { to: "/team/group", label: "Group Management", icon: <GroupIcon />, rolesAllowed: ["Team Leader"] },
+    { to: "/team/tasks", label: "Tasks", icon: <AssignmentTurnedInIcon />, rolesAllowed: ["Team Leader"] },
+    { to: "/team/approvals", label: "Approvals", icon: <PendingActionsIcon />, rolesAllowed: ["Team Leader"] },
   { to: "/team/reports", label: "Group Reports", icon: <LibraryBooksIcon />, rolesAllowed: ["Team Leader"] },
 
   // Admin / Finance / Media

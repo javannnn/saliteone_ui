@@ -396,6 +396,10 @@ export async function listGroupServiceLogs(group: string, limit = 100) {
   const r = await api.get("/method/salitemiret.api.volunteer.list_group_service_logs", { params: { group, limit }, __skipAuthRedirect: true } as any);
   return r.data?.message ?? r.data;
 }
+export async function listGroupToDos(group: string, status: string = "Open", limit = 200, start = 0) {
+  const r = await api.get("/method/salitemiret.api.volunteer.list_group_todos", { params: { group, status, limit, start }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
 export async function approveServiceLog(name: string) {
   const r = await api.post("/method/salitemiret.api.volunteer.approve_service_log", { name } as any);
   return r.data?.message ?? r.data;
