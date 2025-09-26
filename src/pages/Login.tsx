@@ -53,14 +53,14 @@ export default function Login() {
         <div className="space-y-3">
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" value={email} onChange={e=>setEmail(e.target.value)} />
+            <Input id="email" data-testid="login-email" value={email} onChange={e=>setEmail(e.target.value)} />
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+            <Input id="password" data-testid="login-password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
           </div>
           {error && <div className="text-sm text-red-600">{error}</div>}
-          <Button onClick={submit} disabled={busy}>{busy?"Signing in…":"Sign in"}</Button>
+          <Button onClick={submit} data-testid="login-submit" disabled={busy}>{busy?"Signing in…":"Sign in"}</Button>
         </div>
         <Stack spacing={1} sx={{ mt: 2, alignItems: "center" }}>
           <Divider flexItem />

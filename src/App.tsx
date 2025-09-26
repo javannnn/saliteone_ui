@@ -27,6 +27,7 @@ import TeamReports from "@/pages/TeamReports";
 import FinanceDashboard from "@/pages/FinanceDashboard";
 import Reports from "@/pages/Reports";
 import AdminDashboard from "@/pages/AdminDashboard";
+import Notifications from "@/pages/Notifications";
 import RegisterVolunteer from "@/pages/RegisterVolunteer";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
@@ -99,6 +100,7 @@ const router = createBrowserRouter([
   { path: "/finance", element: <AuthedLayout><FinanceDashboard /></AuthedLayout> },
   { path: "/reports", element: <AuthedLayout><Reports /></AuthedLayout> },
   { path: "/admin", element: <AuthedLayout><AdminDashboard /></AuthedLayout> },
+  { path: "/notifications", element: <AuthedLayout><Notifications /></AuthedLayout> },
   { path: "/media", element: <AuthedLayout><Media /></AuthedLayout> },
   { path: "/schools", element: <AuthedLayout><Schools /></AuthedLayout> },
   { path: "/register/volunteer", element: <RegisterVolunteer /> },

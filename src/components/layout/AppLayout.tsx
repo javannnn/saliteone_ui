@@ -40,7 +40,13 @@ import { ThemeToggleButton } from "@/theme";
 import { useAuth } from "@/stores/auth";
 import { useUI } from "@/stores/ui";
 import { logout } from "@/lib/api";
-import { t } from "@/lib/i18n";
+import { tSafe } from "@/lib/i18n";
+import Badge from "@mui/material/Badge";
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import Button from "@mui/material/Button";
+import { useQuery } from "@tanstack/react-query";
+import { listMyNotifications, markAllNotificationsRead } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
 
 const DRAWER_W = 280;
 const RAIL_W = 72;
@@ -76,12 +82,21 @@ const NAV: ReadonlyArray<NavItem> = [
   { to: "/settings", label: "System Settings", icon: <SettingsIcon />, rolesAllowed: ["Admin","Super Admin"] },
 ];
 
+function keyFromLabel(lbl: string) {
+  return lbl.toLowerCase().replace(/\s+/g, "_");
+}
+
 export default function AppLayout({ children }: PropsWithChildren) {
   const { navOpen, setNavOpen, locale, setLocale, perms } = useUI();
   const { user, roles, clear } = useAuth();
   const isMdUp = useMediaQuery("(min-width:900px)");
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
+
+  // Notifications (unread count)
+  const notifQ = useQuery({ queryKey: ["notifs", "header"], queryFn: () => listMyNotifications(20), staleTime: 30_000 });
+  const unread = (notifQ.data || []).filter((n: any) => !n.read).length;
 
   const width = useMemo(() => (isMdUp ? (navOpen ? DRAWER_W : RAIL_W) : 0), [isMdUp, navOpen]);
 
@@ -94,12 +109,12 @@ export default function AppLayout({ children }: PropsWithChildren) {
       </Toolbar>
       <Divider />
       <List sx={{ flex: 1 }} subheader={navOpen ? <ListSubheader disableSticky>General</ListSubheader> : undefined}>
-        {NAV.filter(i => ["/","/membership","/requests"].includes(i.to))
+        {NAV.filter(i => ["/","/membership","/requests","/notifications"].includes(i.to))
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
           .map((item) => (
             <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
-              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={item.label} />}
+            <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
+            {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
             </ListItemButton>
         ))}
         {navOpen && <ListSubheader disableSticky>Volunteer</ListSubheader>}
@@ -108,7 +123,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
           .map((item) => (
             <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
               <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={item.label} />}
+              {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
             </ListItemButton>
         ))}
         {navOpen && <ListSubheader disableSticky>Volunteer Admin</ListSubheader>}
@@ -117,7 +132,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
           .map((item) => (
             <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
               <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={item.label} />}
+              {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
             </ListItemButton>
         ))}
         {navOpen && <ListSubheader disableSticky>Team Leader</ListSubheader>}
@@ -126,7 +141,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
           .map((item) => (
             <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
               <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={item.label} />}
+              {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
             </ListItemButton>
         ))}
         {navOpen && <ListSubheader disableSticky>Admin Tools</ListSubheader>}
@@ -135,7 +150,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
           .map((item) => (
             <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
               <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={item.label} />}
+              {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
             </ListItemButton>
         ))}
       </List>
@@ -165,6 +180,14 @@ export default function AppLayout({ children }: PropsWithChildren) {
           <IconButton color="inherit" onClick={() => setLocale(locale === "en" ? "am" : "en")} title="Language">
             <TranslateIcon />
           </IconButton>
+          <IconButton color="inherit" onClick={() => navigate("/notifications")} title="Notifications">
+            <Badge color="error" badgeContent={unread} invisible={unread===0}>
+              <NotificationsNoneIcon />
+            </Badge>
+          </IconButton>
+          {unread > 0 && (
+            <Button color="inherit" size="small" onClick={async ()=>{ await markAllNotificationsRead(); notifQ.refetch(); }}>Mark all</Button>
+          )}
           {roles?.[0] && <Chip size="small" label={roles[0]} sx={{ mx: 1 }} />}
           <ThemeToggleButton />
         </Toolbar>

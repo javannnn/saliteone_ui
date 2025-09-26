@@ -69,11 +69,11 @@ export default function VolunteerHub() {
         {tab===2 && (
           <Stack spacing={2}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="Date" type="date" size="small" value={svc.service_date} onChange={(e)=>setSvc({...svc, service_date:e.target.value})} InputLabelProps={{ shrink: true }} />
-              <TextField label="Type" size="small" value={svc.service_type} onChange={(e)=>setSvc({...svc, service_type:e.target.value})} placeholder="Ushering" />
-              <TextField label="Hours" type="number" size="small" value={svc.hours} onChange={(e)=>setSvc({...svc, hours:Number(e.target.value)||0})} />
-              <TextField label="Notes" size="small" value={svc.notes} onChange={(e)=>setSvc({...svc, notes:e.target.value})} sx={{ flex: 1 }} />
-              <Button variant="contained" onClick={()=>muSvc.mutate()} disabled={!svc.service_date || !svc.service_type || svc.hours<=0}>Add</Button>
+              <TextField data-testid="svc-date" label="Date" type="date" size="small" value={svc.service_date} onChange={(e)=>setSvc({...svc, service_date:e.target.value})} InputLabelProps={{ shrink: true }} />
+              <TextField data-testid="svc-type" label="Type" size="small" value={svc.service_type} onChange={(e)=>setSvc({...svc, service_type:e.target.value})} placeholder="Ushering" />
+              <TextField data-testid="svc-hours" label="Hours" type="number" size="small" value={svc.hours} onChange={(e)=>setSvc({...svc, hours:Number(e.target.value)||0})} />
+              <TextField data-testid="svc-notes" label="Notes" size="small" value={svc.notes} onChange={(e)=>setSvc({...svc, notes:e.target.value})} sx={{ flex: 1 }} />
+              <Button data-testid="svc-add" variant="contained" onClick={()=>muSvc.mutate()} disabled={!svc.service_date || !svc.service_type || svc.hours<=0}>Add</Button>
             </Stack>
             {!logsQ.data ? <SkeletonTable /> : (
               (logsQ.data || []).length === 0 ? <EmptyState title="No service logs" subtitle="Log your first service above." /> : (

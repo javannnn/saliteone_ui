@@ -234,7 +234,7 @@ export async function listSchoolEnrollments() {
 
 // ---------- Generic list ----------
 export async function listDocs<T = any>(doctype: string, opts: {
-  fields?: string[]; filters?: Record<string, any>; order_by?: string; limit?: number
+  fields?: string[]; filters?: Record<string, any>; order_by?: string; limit?: number; start?: number
 } = {}) {
   const r = await api.get(`/resource/${encodeURIComponent(doctype)}`, {
     params: {
@@ -242,6 +242,7 @@ export async function listDocs<T = any>(doctype: string, opts: {
       ...(opts.filters ? { filters: JSON.stringify(opts.filters) } : {}),
       ...(opts.order_by ? { order_by: opts.order_by } : {}),
       ...(opts.limit ? { limit_page_length: opts.limit } : {}),
+      ...(opts.start ? { limit_start: opts.start } : {}),
     }
   });
   return r.data.data as T[];
@@ -384,6 +385,14 @@ export async function listMyNotifications(limit = 20) {
   const r = await api.get("/method/salitemiret.api.member.list_my_notifications", { params: { limit }, __skipAuthRedirect: true } as any);
   return r.data?.message ?? r.data;
 }
+export async function markNotificationRead(name: string) {
+  const r = await api.post("/method/salitemiret.api.member.mark_notification_read", { name } as any);
+  return r.data?.message ?? r.data;
+}
+export async function markAllNotificationsRead() {
+  const r = await api.post("/method/salitemiret.api.member.mark_all_notifications_read", {} as any);
+  return r.data?.message ?? r.data;
+}
 
 // Volunteer Service Logs
 export async function createServiceLog(payload: any) {
@@ -402,8 +411,8 @@ export async function serviceStats(opts: { volunteer?: string; group?: string; m
   const r = await api.get("/method/salitemiret.api.volunteer.service_stats", { params: opts as any, __skipAuthRedirect: true } as any);
   return r.data?.message ?? r.data;
 }
-export async function listGroupServiceLogs(group: string, limit = 100) {
-  const r = await api.get("/method/salitemiret.api.volunteer.list_group_service_logs", { params: { group, limit }, __skipAuthRedirect: true } as any);
+export async function listGroupServiceLogs(group: string, limit = 100, start = 0) {
+  const r = await api.get("/method/salitemiret.api.volunteer.list_group_service_logs", { params: { group, limit, start }, __skipAuthRedirect: true } as any);
   return r.data?.message ?? r.data;
 }
 export async function listGroupToDos(group: string, status: string = "Open", limit = 200, start = 0) {

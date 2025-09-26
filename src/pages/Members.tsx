@@ -30,12 +30,14 @@ export default function Members() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openDrawer, setOpenDrawer] = useState<{ open: boolean; name?: string }>({ open: false });
 
+  const [page, setPage] = useState(0);
+  const pageSize = 50;
   const membersQ = useQuery({
-    queryKey: ["members", q, status],
+    queryKey: ["members", q, status, page],
     queryFn: async () => {
       const filters: any = {};
       if (status) filters.status = status;
-      const rows = await listDocs<Row>("Member", { fields: ["name","first_name","last_name","phone","status","email"], filters, order_by: "modified desc", limit: 100 });
+      const rows = await listDocs<Row>("Member", { fields: ["name","first_name","last_name","phone","status","email"], filters, order_by: "modified desc", limit: pageSize, start: page*pageSize });
       if (!q) return rows;
       const qq = q.toLowerCase();
       return rows.filter((m) => [m.first_name, m.last_name, m.phone, m.email].filter(Boolean).some((v:any)=> String(v).toLowerCase().includes(qq)));
@@ -59,9 +61,9 @@ export default function Members() {
       <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "start", sm: "center" }} justifyContent="space-between" spacing={2}>
         <Typography variant="h6">Members Directory</Typography>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-          <TextField size="small" label="Search" value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Name, phone, email" />
-          <TextField size="small" label="Status" value={status} onChange={(e)=>setStatus(e.target.value)} placeholder="Active/Pending" />
-          <Button variant="contained" onClick={()=>setOpenCreate(true)}>Create Member</Button>
+          <TextField data-testid="members-search" size="small" label="Search" value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Name, phone, email" />
+          <TextField data-testid="members-status" size="small" label="Status" value={status} onChange={(e)=>setStatus(e.target.value)} placeholder="Active/Pending" />
+          <Button data-testid="members-create" variant="contained" onClick={()=>setOpenCreate(true)}>Create Member</Button>
         </Stack>
       </Stack>
       <Card>
@@ -74,7 +76,7 @@ export default function Members() {
                 </TableHead>
                 <TableBody>
                   {data.map((m) => (
-                    <TableRow key={m.name} hover sx={{ cursor: "pointer" }} onClick={()=>setOpenDrawer({ open: true, name: m.name })}>
+                    <TableRow key={m.name} hover sx={{ cursor: "pointer" }} data-testid={`member-row-${m.name}`} onClick={()=>setOpenDrawer({ open: true, name: m.name })}>
                       <TableCell>{m.first_name}</TableCell>
                       <TableCell>{m.last_name}</TableCell>
                       <TableCell>{m.phone || "-"}</TableCell>
@@ -88,6 +90,10 @@ export default function Members() {
           )}
         </CardContent>
       </Card>
+      <Stack direction="row" spacing={1} justifyContent="flex-end">
+        <Button disabled={page===0} onClick={()=>setPage((p)=>Math.max(0,p-1))}>Prev</Button>
+        <Button onClick={()=>setPage((p)=>p+1)}>Next</Button>
+      </Stack>
 
       {/* Create drawer */}
       <Drawer anchor="right" open={openCreate} onClose={()=>setOpenCreate(false)}>
