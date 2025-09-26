@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import Drawer from "@mui/material/Drawer";
 import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
+import ListSubheader from "@mui/material/ListSubheader";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
@@ -68,6 +69,7 @@ const NAV: ReadonlyArray<NavItem> = [
   { to: "/payments", label: "Payments & Tithes", icon: <PaymentsIcon />, rolesAllowed: ["Admin","Finance Admin"] },
   { to: "/finance", label: "Finance Dashboard", icon: <BarChartIcon />, rolesAllowed: ["Finance Admin"] },
   { to: "/reports", label: "Reports", icon: <BarChartIcon />, rolesAllowed: ["Admin","Finance Admin"] },
+  { to: "/admin", label: "Admin Dashboard", icon: <BarChartIcon />, rolesAllowed: ["Admin"] },
   { to: "/schools", label: "Schools", icon: <SchoolIcon />, rolesAllowed: ["Admin"] },
   { to: "/media/admin", label: "Media Admin", icon: <PhotoLibraryIcon />, rolesAllowed: ["Media Admin","Admin"] },
   { to: "/settings", label: "System Settings", icon: <SettingsIcon />, rolesAllowed: ["Admin","Super Admin"] },
@@ -90,22 +92,50 @@ export default function AppLayout({ children }: PropsWithChildren) {
         <Typography variant="h6" noWrap>{navOpen ? "Salite One" : "S1"}</Typography>
       </Toolbar>
       <Divider />
-      <List sx={{ flex: 1 }}>
-        {NAV.filter((item) => {
-            const permOk = !item.permKey || perms[item.permKey];
-            const roleOk = !item.rolesAllowed || item.rolesAllowed.some(r => (roles || []).includes(r));
-            return permOk && roleOk;
-          }).map((item) => (
-          <ListItemButton
-            key={item.to}
-            component={Link}
-            to={item.to}
-            selected={isActive(item.to)}
-            sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}
-          >
-            <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-            {navOpen && <ListItemText primary={item.label} />}
-          </ListItemButton>
+      <List sx={{ flex: 1 }} subheader={navOpen ? <ListSubheader disableSticky>General</ListSubheader> : undefined}>
+        {NAV.filter(i => ["/","/membership","/requests"].includes(i.to))
+          .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
+          .map((item) => (
+            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
+              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
+              {navOpen && <ListItemText primary={item.label} />}
+            </ListItemButton>
+        ))}
+        {navOpen && <ListSubheader disableSticky>Volunteer</ListSubheader>}
+        {NAV.filter(i => ["/volunteers"].includes(i.to))
+          .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
+          .map((item) => (
+            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
+              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
+              {navOpen && <ListItemText primary={item.label} />}
+            </ListItemButton>
+        ))}
+        {navOpen && <ListSubheader disableSticky>Volunteer Admin</ListSubheader>}
+        {NAV.filter(i => ["/volunteers/admin","/volunteers/bulk-upload"].includes(i.to))
+          .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
+          .map((item) => (
+            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
+              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
+              {navOpen && <ListItemText primary={item.label} />}
+            </ListItemButton>
+        ))}
+        {navOpen && <ListSubheader disableSticky>Team Leader</ListSubheader>}
+        {NAV.filter(i => ["/team/group","/team/approvals","/team/reports"].includes(i.to))
+          .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
+          .map((item) => (
+            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
+              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
+              {navOpen && <ListItemText primary={item.label} />}
+            </ListItemButton>
+        ))}
+        {navOpen && <ListSubheader disableSticky>Admin Tools</ListSubheader>}
+        {NAV.filter(i => ["/admin","/members","/newcomers","/sponsorships","/payments","/finance","/reports","/schools","/media/admin","/settings"].includes(i.to))
+          .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
+          .map((item) => (
+            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
+              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
+              {navOpen && <ListItemText primary={item.label} />}
+            </ListItemButton>
         ))}
       </List>
       <Divider />
