@@ -104,7 +104,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
             sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}
           >
             <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-            {navOpen && <ListItemText primary={t(item.label.toLowerCase() as any, locale)} />}
+            {navOpen && <ListItemText primary={item.label} />}
           </ListItemButton>
         ))}
       </List>

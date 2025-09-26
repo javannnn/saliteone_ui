@@ -7,6 +7,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import CardHeader from "@mui/material/CardHeader";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import IconButton from "@mui/material/IconButton";
@@ -16,6 +17,13 @@ import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Table from "@mui/material/Table";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TableCell from "@mui/material/TableCell";
+import TableBody from "@mui/material/TableBody";
 
 import { useAuth } from "@/stores/auth";
 import {
@@ -220,6 +228,18 @@ export default function Volunteers() {
     enabled: isVolunteerAdmin,
   });
 
+  const requestsQ = useQuery({
+    queryKey: ["vol-requests"],
+    queryFn: async () => (await api.get("/method/salitemiret.api.volunteer.list_volunteer_requests")).data.message,
+    enabled: isVolunteerAdmin,
+    staleTime: 10_000,
+  });
+
+  const approveReq = useMutation({
+    mutationFn: async (process: string) => (await api.post("/method/salitemiret.api.volunteer.approve_volunteer_request", { process })).data.message,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["vol-requests"] }); qc.invalidateQueries({ queryKey: ["volunteers"] }); }
+  });
+
   const myVolQ = useQuery({
     queryKey: ["my-vol", memberQ.data?.name],
     queryFn: () => getVolunteerByMember(memberQ.data!.name),
@@ -270,6 +290,7 @@ export default function Volunteers() {
   const handleAdminDelete = (name: string) => deleteVol.mutate(name);
   const handleAssign = (email: string) => assignTask.mutate(email);
 
+  const [tab, setTab] = useState(0);
   return (
     <Stack spacing={3}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -281,13 +302,48 @@ export default function Volunteers() {
       <Divider />
 
       {isVolunteerAdmin ? (
-        <AdminTable
-          groups={groups}
-          volunteers={volunteers}
-          onUpdate={handleAdminUpdate}
-          onDelete={handleAdminDelete}
-          onAssignTask={handleAssign}
-        />
+        <>
+          <Tabs value={tab} onChange={(_,x)=>setTab(x)} sx={{ mb: 1 }}>
+            <Tab label="Volunteers" />
+            <Tab label="Requests" />
+          </Tabs>
+          {tab===0 && (
+            <AdminTable
+              groups={groups}
+              volunteers={volunteers}
+              onUpdate={handleAdminUpdate}
+              onDelete={handleAdminDelete}
+              onAssignTask={handleAssign}
+            />
+          )}
+          {tab===1 && (
+            <Card variant="outlined">
+              <CardHeader title="Volunteer Requests" subheader="Approve requests and optionally provision login" />
+              <CardContent>
+                <Table size="small">
+                  <TableHead><TableRow><TableCell>Title</TableCell><TableCell>Status</TableCell><TableCell>Email</TableCell><TableCell>Action</TableCell></TableRow></TableHead>
+                  <TableBody>
+                    {(requestsQ.data || []).map((r:any)=> (
+                      <TableRow key={r.name}>
+                        <TableCell>{r.title}</TableCell>
+                        <TableCell>{r.status}</TableCell>
+                        <TableCell>{r.email}</TableCell>
+                        <TableCell>
+                          <Button size="small" variant="contained" onClick={async ()=>{
+                            const res = await approveReq.mutateAsync(r.name);
+                            if (res?.user && res?.password) {
+                              alert(`Provisioned user for ${res.user}. Temp password: ${res.password}`);
+                            }
+                          }}>Approve</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </>
       ) : (
         <VolunteerSelfService
           groups={groups}
