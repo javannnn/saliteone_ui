@@ -43,7 +43,9 @@ const NAV: ReadonlyArray<NavItem> = [
   { to: "/payments", label: "Payments", icon: <PaymentsIcon />, permKey: "Payment" },
   { to: "/sponsorships", label: "Sponsorships", icon: <LoyaltyIcon />, permKey: "Sponsorship" },
   { to: "/newcomers", label: "Newcomers", icon: <TravelExploreIcon />, permKey: "Newcomer" },
-  { to: "/volunteers", label: "Volunteers", icon: <VolunteerActivismIcon />, permKey: "Volunteer" },
+  // Volunteers area: split tools vs admin for clarity
+  { to: "/volunteers", label: "Volunteer tools", icon: <VolunteerActivismIcon />, rolesAllowed: ["Volunteer"] },
+  { to: "/volunteers/admin", label: "Volunteer administration", icon: <VolunteerActivismIcon />, rolesAllowed: ["Admin", "Volunteer Admin"] },
   { to: "/volunteers/bulk-upload", label: "Bulk Upload", icon: <UploadFileIcon />, rolesAllowed: ["Admin", "Volunteer Admin"] },
   { to: "/media", label: "Media", icon: <PhotoLibraryIcon />, permKey: "Media Request" },
   { to: "/schools", label: "Schools", icon: <SchoolIcon />, permKey: "School Enrollment" },

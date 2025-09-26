@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
@@ -187,10 +188,12 @@ function VolunteerSelfService({
 export default function Volunteers() {
   const { user, roles } = useAuth();
   const qc = useQueryClient();
+  const { pathname } = useLocation();
 
+  const forcedAdmin = pathname.endsWith("/admin");
   const isVolunteerAdmin = useMemo(
-    () => (roles || []).some((r) => r === "Admin" || r === "Volunteer Admin"),
-    [roles]
+    () => forcedAdmin || (roles || []).some((r) => r === "Admin" || r === "Volunteer Admin"),
+    [roles, forcedAdmin]
   );
 
   // Stable hook order

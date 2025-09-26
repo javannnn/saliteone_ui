@@ -38,17 +38,29 @@ const SKIP_REDIRECT_KEY = "__skipAuthRedirect" as const;
 
 api.interceptors.response.use(
   (r) => r,
-  (err) => {
+  async (err) => {
     const s = err?.response?.status;
     if (!err?.response) {
       toast.error("Network error");
       return Promise.reject(err);
     }
     const skip = err?.config && (err.config as any)[SKIP_REDIRECT_KEY];
-    if (!skip && (s === 401 || s === 403)) {
-      try { localStorage.removeItem("auth"); } catch {}
-      if (window.location.pathname !== "/") {
-        window.location.href = "/";
+    // Never nuke auth on 403 — show a gentle message instead
+    if (s === 403) {
+      if (!skip) toast.error("Insufficient permissions");
+      return Promise.reject(err);
+    }
+    // Only redirect on confirmed expired session (401 + whoami says Guest)
+    if (s === 401 && !skip) {
+      try {
+        const me = await api.get("/method/salitemiret.api.auth.whoami", { [SKIP_REDIRECT_KEY]: true } as any);
+        const msg = me?.data?.message ?? me?.data;
+        if (!msg || msg.user === "Guest") {
+          try { localStorage.removeItem("auth"); } catch {}
+          if (window.location.pathname !== "/") window.location.href = "/";
+        }
+      } catch {
+        // If whoami fails, be conservative and don't force logout immediately.
       }
     }
     return Promise.reject(err);
