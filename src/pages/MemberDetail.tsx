@@ -33,12 +33,13 @@ export default function MemberDetail() {
     }
   });
 
+  // All hooks must be declared before any conditional return
   const [tab, setTab] = useState(0);
 
-  if (q.isLoading) return <Card className="p-4"><Spinner /></Card>;
-  if (q.isError || !q.data) return <Card className="p-4 text-red-600">Not found.</Card>;
-  const m = q.data;
-  const fullName = [m.first_name, m.last_name].filter(Boolean).join(" ") || m.name;
+  const isLoading = q.isLoading;
+  const hasError = q.isError || !q.data;
+  const m = q.data as Member | undefined;
+  const fullName = m ? ([m.first_name, m.last_name].filter(Boolean).join(" ") || m.name) : "";
 
   const paymentsQ = useQuery({
     queryKey: ["payments", name],
@@ -57,6 +58,9 @@ export default function MemberDetail() {
     },
     enabled: tab===3 && !!name,
   });
+
+  if (isLoading) return <Card className="p-4"><Spinner /></Card>;
+  if (hasError || !m) return <Card className="p-4 text-red-600">Not found.</Card>;
 
   return (
     <div className="space-y-4">
