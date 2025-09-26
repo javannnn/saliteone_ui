@@ -411,6 +411,20 @@ export async function getAdminDashboardCounts() {
   return r.data?.message ?? r.data;
 }
 
+// Team Leader helpers
+export async function listGroupMembers(group: string) {
+  const r = await api.get("/method/salitemiret.api.volunteer.list_group_members", { params: { group }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function assignTodoToVolunteer(volunteer: string, subject: string, due_date?: string) {
+  const r = await api.post("/method/salitemiret.api.volunteer.assign_todo_to_volunteer", { volunteer, subject, due_date } as any);
+  return r.data?.message ?? r.data;
+}
+export async function groupReport(group: string, date_from?: string, date_to?: string) {
+  const r = await api.get("/method/salitemiret.api.volunteer.group_report", { params: { group, date_from, date_to }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+
 // Public: request volunteer onboarding
 export async function requestVolunteer(input: {
   email: string;
