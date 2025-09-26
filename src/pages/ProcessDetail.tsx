@@ -5,7 +5,7 @@ import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 import Input from "@/components/ui/input";
 import Label from "@/components/ui/label";
-import { getDoc, updateDoc, hasPermission } from "@/lib/api";
+import { api, updateDoc, hasPermission } from "@/lib/api";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
@@ -18,7 +18,14 @@ export default function ProcessDetail() {
 
   const qDoc = useQuery({
     queryKey: ["process", name],
-    queryFn: () => getDoc<Proc>("Workflow Process", name, ["name","title","status","owner","modified"]) 
+    enabled: !!name,
+    queryFn: async () => {
+      const { data } = await api.get(
+        `/resource/${encodeURIComponent("Workflow Process")}/${encodeURIComponent(name)}`,
+        { params: { fields: JSON.stringify(["name","title","status","owner","modified"]) }, __skipAuthRedirect: true } as any
+      );
+      return data.data as Proc;
+    }
   });
 
   const [canWrite, setCanWrite] = useState(false);
@@ -72,4 +79,3 @@ function nextStatus(s: string) {
   if (s === "In Progress") return "Done";
   return "Done";
 }
-

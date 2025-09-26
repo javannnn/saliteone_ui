@@ -188,8 +188,8 @@ export default function Volunteers() {
   const { user, roles } = useAuth();
   const qc = useQueryClient();
 
-  const isAdmin = useMemo(
-    () => roles.some((r) => r === "Admin" || r === "User Management Admin"),
+  const isVolunteerAdmin = useMemo(
+    () => (roles || []).some((r) => r === "Admin" || r === "Volunteer Admin"),
     [roles]
   );
 
@@ -204,26 +204,26 @@ export default function Volunteers() {
   const groupsQ = useQuery({
     queryKey: ["vol-groups"],
     queryFn: () => listVolunteerGroups(),
-    enabled: true,
+    enabled: !!user?.name,
     staleTime: 60_000,
   });
 
   const volunteersQ = useQuery({
     queryKey: ["volunteers"],
     queryFn: () => listVolunteers(),
-    enabled: isAdmin,
+    enabled: isVolunteerAdmin,
   });
 
   const myVolQ = useQuery({
     queryKey: ["my-vol", memberQ.data?.name],
     queryFn: () => getVolunteerByMember(memberQ.data!.name),
-    enabled: !!memberQ.data && !isAdmin,
+    enabled: !!memberQ.data && !isVolunteerAdmin,
   });
 
   const todosQ = useQuery({
     queryKey: ["todos", user],
     queryFn: () => listToDosFor(user!.name, 10),
-    enabled: !!user?.name && !isAdmin,
+    enabled: !!user?.name && !isVolunteerAdmin,
   });
 
   const createVol = useMutation({
@@ -266,10 +266,15 @@ export default function Volunteers() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5">Volunteers</Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Typography variant="h5">Volunteers</Typography>
+        {isVolunteerAdmin && (
+          <Button variant="outlined" href="/volunteers/bulk-upload">Bulk Upload</Button>
+        )}
+      </Stack>
       <Divider />
 
-      {isAdmin ? (
+      {isVolunteerAdmin ? (
         <AdminTable
           groups={groups}
           volunteers={volunteers}

@@ -23,6 +23,7 @@ import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import SchoolIcon from "@mui/icons-material/School";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import LogoutIcon from "@mui/icons-material/Logout";
 import TranslateIcon from "@mui/icons-material/Translate";
 import { ThemeToggleButton } from "@/theme";
@@ -34,7 +35,8 @@ import { t } from "@/lib/i18n";
 const DRAWER_W = 280;
 const RAIL_W = 72;
 
-const NAV = [
+type NavItem = { to: string; label: string; icon: JSX.Element; permKey?: string; rolesAllowed?: string[] };
+const NAV: ReadonlyArray<NavItem> = [
   { to: "/", label: "Dashboard", icon: <DashboardIcon /> },
   { to: "/processes", label: "Processes", icon: <SchemaIcon />, permKey: "Workflow Process" },
   { to: "/members", label: "Members", icon: <PeopleIcon />, permKey: "Member" },
@@ -42,6 +44,7 @@ const NAV = [
   { to: "/sponsorships", label: "Sponsorships", icon: <LoyaltyIcon />, permKey: "Sponsorship" },
   { to: "/newcomers", label: "Newcomers", icon: <TravelExploreIcon />, permKey: "Newcomer" },
   { to: "/volunteers", label: "Volunteers", icon: <VolunteerActivismIcon />, permKey: "Volunteer" },
+  { to: "/volunteers/bulk-upload", label: "Bulk Upload", icon: <UploadFileIcon />, rolesAllowed: ["Admin", "Volunteer Admin"] },
   { to: "/media", label: "Media", icon: <PhotoLibraryIcon />, permKey: "Media Request" },
   { to: "/schools", label: "Schools", icon: <SchoolIcon />, permKey: "School Enrollment" },
 ] as const;
@@ -64,8 +67,11 @@ export default function AppLayout({ children }: PropsWithChildren) {
       </Toolbar>
       <Divider />
       <List sx={{ flex: 1 }}>
-        {NAV.filter(i => !("permKey" in i) || (i as any).permKey == null || perms[(i as any).permKey as string])
-          .map((item) => (
+        {NAV.filter((item) => {
+            const permOk = !item.permKey || perms[item.permKey];
+            const roleOk = !item.rolesAllowed || item.rolesAllowed.some(r => (roles || []).includes(r));
+            return permOk && roleOk;
+          }).map((item) => (
           <ListItemButton
             key={item.to}
             component={Link}

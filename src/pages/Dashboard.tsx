@@ -19,6 +19,9 @@ import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
+import List from "@mui/material/List";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
 
 import {
   ping,
@@ -63,7 +66,7 @@ export default function Dashboard() {
   const nav = useNavigate();
   const isVolunteer = useMemo(() => (roles || []).includes("Volunteer"), [roles]);
   const isApprover = useMemo(
-    () => (roles || []).some((r) => r === "Admin" || r === "Finance Admin" || r === "User Management Admin"),
+    () => (roles || []).some((r) => r === "Admin" || r === "Volunteer Admin"),
     [roles]
   );
 
@@ -110,7 +113,10 @@ export default function Dashboard() {
                     <Button variant="contained" size="small" onClick={() => nav("/volunteers")}>Set up your volunteer profile</Button>
                   )}
                   {isApprover && !isVolunteer && (
-                    <Button variant="outlined" component={RouterLink} to="/volunteers">Open Volunteers</Button>
+                    <Button variant="outlined" component={RouterLink} to="/volunteers">Volunteer administration</Button>
+                  )}
+                  {(roles || []).some((r) => r === "Finance" || r === "Admin") && (
+                    <Button variant="text" component={RouterLink} to="/members">Memberships</Button>
                   )}
                 </Stack>
               </Stack>
@@ -207,21 +213,43 @@ export default function Dashboard() {
           <Paper elevation={0} sx={{ p: 2.5, border: (t) => `1px solid ${t.palette.divider}` }}>
             <Typography variant="overline" color="text.secondary">Recent Workflow Updates</Typography>
             <Divider sx={{ my: 1.5 }} />
-            <Stack spacing={1.25}>
-              {qRecent.isLoading && (<>
+            {qRecent.isLoading ? (
+              <>
                 <Skeleton height={28} />
                 <Skeleton height={28} />
                 <Skeleton height={28} />
-              </>)}
-              {qRecent.data?.map((r) => (
-                <Stack key={r.name} direction="row" alignItems="center" spacing={1.5} sx={{ minHeight: 28 }}>
-                  <Typography sx={{ fontWeight: 600 }}>{r.title}</Typography>
-                  <StatusChip label={r.status || "Unknown"} />
-                  <Box sx={{ flex: 1 }} />
-                  <Typography variant="body2" color="text.secondary">{formatTime(r.modified)}</Typography>
-                </Stack>
-              ))}
-            </Stack>
+              </>
+            ) : (
+              <List dense disablePadding>
+                {(qRecent.data || []).map((row) => (
+                  <ListItemButton
+                    key={row.name}
+                    component={RouterLink}
+                    to={`/processes/${encodeURIComponent(row.name)}`}
+                    sx={{ px: 2, py: 1 }}
+                    aria-label={`Open ${row.title} (${row.status})`}
+                  >
+                    <ListItemText
+                      primary={row.title}
+                      secondary={formatTime(row.modified)}
+                      primaryTypographyProps={{ noWrap: true }}
+                      secondaryTypographyProps={{ noWrap: true }}
+                    />
+                    <Chip
+                      size="small"
+                      label={row.status || "Unknown"}
+                      clickable
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        nav(`/processes?status=${encodeURIComponent(row.status || "")}`);
+                      }}
+                      aria-label={`Filter by status ${row.status}`}
+                    />
+                  </ListItemButton>
+                ))}
+              </List>
+            )}
           </Paper>
         </Grid>
       </Grid>

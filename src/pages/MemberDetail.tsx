@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
-import { getDoc } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type Member = { name: string; first_name?: string; last_name?: string; email?: string; phone?: string; status?: string };
 
@@ -13,7 +13,14 @@ export default function MemberDetail() {
 
   const q = useQuery({
     queryKey: ["member", name],
-    queryFn: () => getDoc<Member>("Member", name, ["name","first_name","last_name","email","phone","status"]) 
+    enabled: !!name,
+    queryFn: async () => {
+      const { data } = await api.get(
+        `/resource/${encodeURIComponent("Member")}/${encodeURIComponent(name)}`,
+        { params: { fields: JSON.stringify(["name","first_name","last_name","email","phone","status"]) }, __skipAuthRedirect: true } as any
+      );
+      return data.data as Member;
+    }
   });
 
   if (q.isLoading) return <Card className="p-4"><Spinner /></Card>;
@@ -36,4 +43,3 @@ export default function MemberDetail() {
     </div>
   );
 }
-
