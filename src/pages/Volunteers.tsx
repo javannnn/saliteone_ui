@@ -236,8 +236,15 @@ export default function Volunteers() {
   });
 
   const approveReq = useMutation({
-    mutationFn: async (process: string) => (await api.post("/method/salitemiret.api.volunteer.approve_volunteer_request", { process })).data.message,
+    mutationFn: async (process: string) => (await api.post("/method/salitemiret.api.volunteer.approve_volunteer_request", { process, create_user: 0 })).data.message,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["vol-requests"] }); qc.invalidateQueries({ queryKey: ["volunteers"] }); }
+  });
+  const promoteMember = useMutation({
+    mutationFn: async (member: string) => (await api.post("/method/salitemiret.api.auth.ensure_system_user_for_member", { member })).data.message,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["vol-requests"] })
+  });
+  const genTempPwd = useMutation({
+    mutationFn: async (member: string) => (await api.post("/method/salitemiret.api.volunteer.generate_member_temp_password", { member })).data.message,
   });
 
   const myVolQ = useQuery({
@@ -321,20 +328,34 @@ export default function Volunteers() {
               <CardHeader title="Volunteer Requests" subheader="Approve requests and optionally provision login" />
               <CardContent>
                 <Table size="small">
-                  <TableHead><TableRow><TableCell>Title</TableCell><TableCell>Status</TableCell><TableCell>Email</TableCell><TableCell>Action</TableCell></TableRow></TableHead>
+                  <TableHead><TableRow><TableCell>Title</TableCell><TableCell>Status</TableCell><TableCell>Email</TableCell><TableCell>Member</TableCell><TableCell>Actions</TableCell></TableRow></TableHead>
                   <TableBody>
                     {(requestsQ.data || []).map((r:any)=> (
                       <TableRow key={r.name}>
                         <TableCell>{r.title}</TableCell>
                         <TableCell>{r.status}</TableCell>
                         <TableCell>{r.email}</TableCell>
+                        <TableCell>{r.member || "-"}</TableCell>
                         <TableCell>
-                          <Button size="small" variant="contained" onClick={async ()=>{
-                            const res = await approveReq.mutateAsync(r.name);
-                            if (res?.user && res?.password) {
-                              alert(`Provisioned user for ${res.user}. Temp password: ${res.password}`);
-                            }
-                          }}>Approve</Button>
+                          <Stack direction="row" spacing={1}>
+                            <Button size="small" variant="contained" onClick={async ()=>{
+                              await approveReq.mutateAsync(r.name);
+                            }}>Approve</Button>
+                            {r.member && <Button size="small" variant="outlined" onClick={async ()=>{
+                              try {
+                                const res = await genTempPwd.mutateAsync(r.member);
+                                if (res?.user && res?.password) {
+                                  alert(`Temp credentials for ${res.user}: ${res.password}`);
+                                }
+                              } catch (e:any) {
+                                alert(e?.response?.data?.message || e?.message || "Failed to generate");
+                              }
+                            }}>Generate Password</Button>}
+                            {r.member && <Button size="small" onClick={async ()=>{
+                              await promoteMember.mutateAsync(r.member);
+                              alert("Promoted to System User");
+                            }}>Promote to System User</Button>}
+                          </Stack>
                         </TableCell>
                       </TableRow>
                     ))}
