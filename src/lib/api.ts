@@ -333,6 +333,24 @@ export async function ensureSystemUserForMember(member: string, roles?: string[]
   return (r.data?.message ?? r.data) as { user: string };
 }
 
+// --------- Member self-service ---------
+export async function getMyMember() {
+  const r = await api.get("/method/salitemiret.api.member.my_member", { __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function updateMyMember(patch: any) {
+  const r = await api.post("/method/salitemiret.api.member.update_my_member", { patch } as any);
+  return r.data?.message ?? r.data;
+}
+export async function listMyPayments(limit = 50) {
+  const r = await api.get("/method/salitemiret.api.member.list_my_payments", { params: { limit }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function listMySponsorships(limit = 50) {
+  const r = await api.get("/method/salitemiret.api.member.list_my_sponsorships", { params: { limit }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+
 // Public: request volunteer onboarding
 export async function requestVolunteer(input: {
   email: string;
