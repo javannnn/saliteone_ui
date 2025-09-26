@@ -90,7 +90,7 @@ export default function MemberDetail() {
               </TableHead>
               <TableBody>
                 {(paymentsQ.data || []).map((p:any)=> (
-                  <TableRow key={p.name}><TableCell>{p.posting_date}</TableCell><TableCell>{p.mode_of_payment}</TableCell><TableCell>{p.status}</}</TableCell><TableCell align="right">{p.amount}</TableCell></TableRow>
+                  <TableRow key={p.name}><TableCell>{p.posting_date}</TableCell><TableCell>{p.mode_of_payment}</TableCell><TableCell>{p.status}</TableCell><TableCell align="right">{p.amount}</TableCell></TableRow>
                 ))}
               </TableBody>
             </Table>
