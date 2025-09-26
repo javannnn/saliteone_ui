@@ -242,34 +242,35 @@ export async function listDocs<T = any>(doctype: string, opts: {
 
 // ---------- Member lookup by email ----------
 export async function getMemberByEmail(email: string) {
-  const rows = await listDocs<{ name: string; first_name?: string; last_name?: string; email?: string }>("Member", {
-    fields: ["name","first_name","last_name","email"], filters: { email }, limit: 1
-  });
-  return rows[0] || null;
+  const r = await api.get("/method/salitemiret.api.volunteer.get_member_by_email", { params: { email }, __skipAuthRedirect: true } as any);
+  const msg = r.data?.message ?? r.data;
+  return msg || null;
 }
 
 // ---------- Volunteer ----------
 export type Volunteer = { name: string; member: string; group?: string; services?: string };
 export async function getVolunteerByMember(member: string) {
-  const rows = await listDocs<Volunteer>("Volunteer", { filters: { member }, limit: 1, fields: ["name","member","group","services"] });
-  return rows[0] || null;
+  const r = await api.get("/method/salitemiret.api.volunteer.get_volunteer_by_member", { params: { member }, __skipAuthRedirect: true } as any);
+  return (r.data?.message ?? r.data) || null;
 }
 export async function createVolunteer(data: { member: string; group?: string; services?: string }) {
-  const r = await api.post("/resource/Volunteer", data);
-  return r.data.data as Volunteer;
+  const r = await api.post("/method/salitemiret.api.volunteer.create_volunteer", data as any);
+  return (r.data?.message ?? r.data) as any as Volunteer;
 }
 export async function updateVolunteer(name: string, patch: Partial<Volunteer>) {
-  const r = await api.put(`/resource/Volunteer/${encodeURIComponent(name)}`, patch);
-  return r.data.data as Volunteer;
+  const r = await api.post("/method/salitemiret.api.volunteer.update_volunteer", { name, patch } as any);
+  return (r.data?.message ?? r.data) as any as Volunteer;
 }
 export async function deleteVolunteer(name: string) {
-  await api.delete(`/resource/Volunteer/${encodeURIComponent(name)}`);
+  await api.post("/method/salitemiret.api.volunteer.delete_volunteer", { name } as any);
 }
 
 // ---------- Volunteer Group ----------
 export type VolunteerGroup = { name: string; group_name: string; leader?: string; description?: string };
 export async function listVolunteerGroups() {
-  return listDocs<VolunteerGroup>("Volunteer Group", { fields: ["name","group_name","leader","description"], order_by: "group_name asc", limit: 200 });
+  const r = await api.get("/method/salitemiret.api.volunteer.list_groups", { __skipAuthRedirect: true } as any);
+  const rows = (r.data?.message ?? r.data) as Array<{ name: string; group_name: string }>;
+  return rows.map((x) => ({ name: x.name, group_name: x.group_name })) as any as VolunteerGroup[];
 }
 export async function createVolunteerGroup(data: { group_name: string; leader?: string; description?: string }) {
   const r = await api.post("/resource/Volunteer%20Group", data);
@@ -301,31 +302,14 @@ export async function listMyToDos(limit = 20) {
 
 // List ToDos for specific user (by allocated_to); fallback to owner if server expects it
 export async function listToDosFor(email: string, limit = 20) {
-  const r = await api.get("/method/frappe.client.get_list", {
-    params: {
-      doctype: "ToDo",
-      fields: JSON.stringify(["name","status","date","reference_type","reference_name","description"]),
-      filters: JSON.stringify({ allocated_to: email, status: "Open" }),
-      limit_page_length: limit,
-      order_by: "modified desc"
-    },
-    __skipAuthRedirect: true as any
-  } as any);
-  return (r.data.message || []) as ToDoLite[];
+  const r = await api.get("/method/salitemiret.api.volunteer.list_todos_for", { params: { email, limit }, __skipAuthRedirect: true } as any);
+  return ((r.data?.message ?? r.data) || []) as ToDoLite[];
 }
 
 // Create ToDo assigned to user
 export async function createToDo(params: { allocated_to: string; description: string; reference_type?: string; reference_name?: string; status?: string }) {
-  const payload = {
-    doctype: "ToDo",
-    allocated_to: params.allocated_to,
-    description: params.description,
-    reference_type: params.reference_type,
-    reference_name: params.reference_name,
-    status: params.status || "Open"
-  } as any;
-  const r = await api.post("/resource/ToDo", payload);
-  return r.data;
+  const r = await api.post("/method/salitemiret.api.volunteer.create_todo", params as any);
+  return (r.data?.message ?? r.data);
 }
 
 // Public: request volunteer onboarding

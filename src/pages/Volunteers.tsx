@@ -20,7 +20,6 @@ import ListItemText from "@mui/material/ListItemText";
 import { useAuth } from "@/stores/auth";
 import {
   listVolunteerGroups,
-  listVolunteers,
   getMemberByEmail,
   getVolunteerByMember,
   createVolunteer,
@@ -29,6 +28,7 @@ import {
   listToDosFor,
   createToDo,
 } from "@/lib/api";
+import { api } from "@/lib/api";
 
 function AdminTable({
   groups,
@@ -213,7 +213,10 @@ export default function Volunteers() {
 
   const volunteersQ = useQuery({
     queryKey: ["volunteers"],
-    queryFn: () => listVolunteers(),
+    queryFn: async () => {
+      const { data } = await api.get("/method/salitemiret.api.volunteer.list_volunteers");
+      return data?.message ?? data;
+    },
     enabled: isVolunteerAdmin,
   });
 
