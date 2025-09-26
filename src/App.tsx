@@ -10,12 +10,20 @@ import Payments from "@/pages/Payments";
 import Sponsorships from "@/pages/Sponsorships";
 import Newcomers from "@/pages/Newcomers";
 import Volunteers from "@/pages/Volunteers";
+import VolunteerHub from "@/pages/VolunteerHub";
 import VolunteerDetail from "@/pages/VolunteerDetail";
 import VolunteerBulkUpload from "@/pages/VolunteerBulkUpload";
 import Media from "@/pages/Media";
 import Schools from "@/pages/Schools";
 import ProcessDetail from "@/pages/ProcessDetail";
 import MemberDetail from "@/pages/MemberDetail";
+import Membership from "@/pages/Membership";
+import Requests from "@/pages/Requests";
+import TeamGroup from "@/pages/TeamGroup";
+import TeamApprovals from "@/pages/TeamApprovals";
+import TeamReports from "@/pages/TeamReports";
+import FinanceDashboard from "@/pages/FinanceDashboard";
+import Reports from "@/pages/Reports";
 import RegisterVolunteer from "@/pages/RegisterVolunteer";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
@@ -75,10 +83,17 @@ const router = createBrowserRouter([
   { path: "/payments", element: <AuthedLayout><Payments /></AuthedLayout> },
   { path: "/sponsorships", element: <AuthedLayout><Sponsorships /></AuthedLayout> },
   { path: "/newcomers", element: <AuthedLayout><Newcomers /></AuthedLayout> },
-  { path: "/volunteers", element: <AuthedLayout><Volunteers /></AuthedLayout> },
+  { path: "/membership", element: <AuthedLayout><Membership /></AuthedLayout> },
+  { path: "/requests", element: <AuthedLayout><Requests /></AuthedLayout> },
+  { path: "/volunteers", element: <AuthedLayout><VolunteerHub /></AuthedLayout> },
   { path: "/volunteers/admin", element: <AuthedLayout><Volunteers /></AuthedLayout> },
   { path: "/volunteers/:volunteerId", element: <AuthedLayout><VolunteerDetail /></AuthedLayout> },
   { path: "/volunteers/bulk-upload", element: <AuthedLayout><VolunteerBulkUpload /></AuthedLayout> },
+  { path: "/team/group", element: <AuthedLayout><TeamGroup /></AuthedLayout> },
+  { path: "/team/approvals", element: <AuthedLayout><TeamApprovals /></AuthedLayout> },
+  { path: "/team/reports", element: <AuthedLayout><TeamReports /></AuthedLayout> },
+  { path: "/finance", element: <AuthedLayout><FinanceDashboard /></AuthedLayout> },
+  { path: "/reports", element: <AuthedLayout><Reports /></AuthedLayout> },
   { path: "/media", element: <AuthedLayout><Media /></AuthedLayout> },
   { path: "/schools", element: <AuthedLayout><Schools /></AuthedLayout> },
   { path: "/register/volunteer", element: <RegisterVolunteer /> },

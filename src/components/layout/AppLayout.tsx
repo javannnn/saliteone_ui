@@ -23,6 +23,16 @@ import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import SchoolIcon from "@mui/icons-material/School";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import GroupIcon from "@mui/icons-material/Group";
+import GroupsIcon from "@mui/icons-material/Groups";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
+import SettingsIcon from "@mui/icons-material/Settings";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import LogoutIcon from "@mui/icons-material/Logout";
 import TranslateIcon from "@mui/icons-material/Translate";
@@ -37,19 +47,32 @@ const RAIL_W = 72;
 
 type NavItem = { to: string; label: string; icon: JSX.Element; permKey?: string; rolesAllowed?: string[] };
 const NAV: ReadonlyArray<NavItem> = [
+  // General
   { to: "/", label: "Dashboard", icon: <DashboardIcon /> },
-  { to: "/processes", label: "Processes", icon: <SchemaIcon />, permKey: "Workflow Process" },
-  { to: "/members", label: "Members", icon: <PeopleIcon />, permKey: "Member" },
-  { to: "/payments", label: "Payments", icon: <PaymentsIcon />, permKey: "Payment" },
-  { to: "/sponsorships", label: "Sponsorships", icon: <LoyaltyIcon />, permKey: "Sponsorship" },
-  { to: "/newcomers", label: "Newcomers", icon: <TravelExploreIcon />, permKey: "Newcomer" },
-  // Volunteers area: split tools vs admin for clarity
-  { to: "/volunteers", label: "Volunteer tools", icon: <VolunteerActivismIcon />, rolesAllowed: ["Volunteer"] },
-  { to: "/volunteers/admin", label: "Volunteer administration", icon: <VolunteerActivismIcon />, rolesAllowed: ["Admin", "Volunteer Admin"] },
+  { to: "/membership", label: "My Membership", icon: <ManageAccountsIcon />, rolesAllowed: ["Member","Volunteer","Team Leader"] },
+  { to: "/requests", label: "Requests", icon: <AssignmentIcon />, rolesAllowed: ["Member","Volunteer","Team Leader"] },
+
+  // Volunteers
+  { to: "/volunteers", label: "Volunteer Hub", icon: <VolunteerActivismIcon />, rolesAllowed: ["Volunteer","Team Leader"] },
+  { to: "/volunteers/admin", label: "Volunteer administration", icon: <GroupsIcon />, rolesAllowed: ["Admin", "Volunteer Admin"] },
   { to: "/volunteers/bulk-upload", label: "Bulk Upload", icon: <UploadFileIcon />, rolesAllowed: ["Admin", "Volunteer Admin"] },
-  { to: "/media", label: "Media", icon: <PhotoLibraryIcon />, permKey: "Media Request" },
-  { to: "/schools", label: "Schools", icon: <SchoolIcon />, permKey: "School Enrollment" },
-] as const;
+
+  // Team Leader specific
+  { to: "/team/group", label: "Group Management", icon: <GroupIcon />, rolesAllowed: ["Team Leader"] },
+  { to: "/team/approvals", label: "Approvals", icon: <PendingActionsIcon />, rolesAllowed: ["Team Leader"] },
+  { to: "/team/reports", label: "Group Reports", icon: <LibraryBooksIcon />, rolesAllowed: ["Team Leader"] },
+
+  // Admin / Finance / Media
+  { to: "/members", label: "Members Directory", icon: <PeopleIcon />, rolesAllowed: ["Admin"] },
+  { to: "/newcomers", label: "Newcomers", icon: <TravelExploreIcon />, rolesAllowed: ["Admin"] },
+  { to: "/sponsorships", label: "Sponsorships", icon: <LoyaltyIcon />, rolesAllowed: ["Admin"] },
+  { to: "/payments", label: "Payments & Tithes", icon: <PaymentsIcon />, rolesAllowed: ["Admin","Finance Admin"] },
+  { to: "/finance", label: "Finance Dashboard", icon: <BarChartIcon />, rolesAllowed: ["Finance Admin"] },
+  { to: "/reports", label: "Reports", icon: <BarChartIcon />, rolesAllowed: ["Admin","Finance Admin"] },
+  { to: "/schools", label: "Schools", icon: <SchoolIcon />, rolesAllowed: ["Admin"] },
+  { to: "/media/admin", label: "Media Admin", icon: <PhotoLibraryIcon />, rolesAllowed: ["Media Admin","Admin"] },
+  { to: "/settings", label: "System Settings", icon: <SettingsIcon />, rolesAllowed: ["Admin","Super Admin"] },
+];
 
 export default function AppLayout({ children }: PropsWithChildren) {
   const { navOpen, setNavOpen, locale, setLocale, perms } = useUI();
