@@ -1,4 +1,5 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import ErrorBoundary from "@/pages/ErrorBoundary";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toast } from "@/components/ui/toast";
@@ -24,6 +25,7 @@ import TeamApprovals from "@/pages/TeamApprovals";
 import TeamReports from "@/pages/TeamReports";
 import FinanceDashboard from "@/pages/FinanceDashboard";
 import Reports from "@/pages/Reports";
+import AdminDashboard from "@/pages/AdminDashboard";
 import RegisterVolunteer from "@/pages/RegisterVolunteer";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
@@ -75,7 +77,7 @@ function AuthedLayout({ children }: { children: JSX.Element }) {
 }
 
 const router = createBrowserRouter([
-  { path: "/", element: <AuthedLayout><Dashboard /></AuthedLayout> },
+  { path: "/", element: <AuthedLayout><Dashboard /></AuthedLayout>, errorElement: <ErrorBoundary><Login /></ErrorBoundary> },
   { path: "/processes", element: <AuthedLayout><Processes /></AuthedLayout> },
   { path: "/processes/:name", element: <AuthedLayout><ProcessDetail /></AuthedLayout> },
   { path: "/members/:name", element: <AuthedLayout><MemberDetail /></AuthedLayout> },
@@ -83,7 +85,7 @@ const router = createBrowserRouter([
   { path: "/payments", element: <AuthedLayout><Payments /></AuthedLayout> },
   { path: "/sponsorships", element: <AuthedLayout><Sponsorships /></AuthedLayout> },
   { path: "/newcomers", element: <AuthedLayout><Newcomers /></AuthedLayout> },
-  { path: "/membership", element: <AuthedLayout><Membership /></AuthedLayout> },
+  { path: "/membership", element: <AuthedLayout><Membership /></AuthedLayout>, errorElement: <ErrorBoundary><Login /></ErrorBoundary> },
   { path: "/requests", element: <AuthedLayout><Requests /></AuthedLayout> },
   { path: "/volunteers", element: <AuthedLayout><VolunteerHub /></AuthedLayout> },
   { path: "/volunteers/admin", element: <AuthedLayout><Volunteers /></AuthedLayout> },
@@ -94,6 +96,7 @@ const router = createBrowserRouter([
   { path: "/team/reports", element: <AuthedLayout><TeamReports /></AuthedLayout> },
   { path: "/finance", element: <AuthedLayout><FinanceDashboard /></AuthedLayout> },
   { path: "/reports", element: <AuthedLayout><Reports /></AuthedLayout> },
+  { path: "/admin", element: <AuthedLayout><AdminDashboard /></AuthedLayout> },
   { path: "/media", element: <AuthedLayout><Media /></AuthedLayout> },
   { path: "/schools", element: <AuthedLayout><Schools /></AuthedLayout> },
   { path: "/register/volunteer", element: <RegisterVolunteer /> },

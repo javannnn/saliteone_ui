@@ -375,6 +375,42 @@ export async function setMyTitheCommitment(payload: { committed: boolean; monthl
   return r.data?.message ?? r.data;
 }
 
+// Volunteer Service Logs
+export async function createServiceLog(payload: any) {
+  const r = await api.post("/method/salitemiret.api.volunteer.create_service_log", { payload } as any);
+  return r.data?.message ?? r.data;
+}
+export async function listMyServiceLogs(limit = 50) {
+  const r = await api.get("/method/salitemiret.api.volunteer.list_my_service_logs", { params: { limit }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function updateServiceLog(name: string, payload: any) {
+  const r = await api.post("/method/salitemiret.api.volunteer.update_service_log", { name, payload } as any);
+  return r.data?.message ?? r.data;
+}
+export async function serviceStats(opts: { volunteer?: string; group?: string; months?: number } = {}) {
+  const r = await api.get("/method/salitemiret.api.volunteer.service_stats", { params: opts as any, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function listGroupServiceLogs(group: string, limit = 100) {
+  const r = await api.get("/method/salitemiret.api.volunteer.list_group_service_logs", { params: { group, limit }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function approveServiceLog(name: string) {
+  const r = await api.post("/method/salitemiret.api.volunteer.approve_service_log", { name } as any);
+  return r.data?.message ?? r.data;
+}
+export async function rejectServiceLog(name: string, reason?: string) {
+  const r = await api.post("/method/salitemiret.api.volunteer.reject_service_log", { name, reason } as any);
+  return r.data?.message ?? r.data;
+}
+
+// Admin dashboard
+export async function getAdminDashboardCounts() {
+  const r = await api.get("/method/salitemiret.api.admin.admin_dashboard_counts", { __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+
 // Public: request volunteer onboarding
 export async function requestVolunteer(input: {
   email: string;
