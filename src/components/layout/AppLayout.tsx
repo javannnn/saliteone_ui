@@ -33,7 +33,6 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import SettingsIcon from "@mui/icons-material/Settings";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
 import LogoutIcon from "@mui/icons-material/Logout";
 import TranslateIcon from "@mui/icons-material/Translate";
 import { ThemeToggleButton } from "@/theme";
