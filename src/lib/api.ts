@@ -132,8 +132,9 @@ export async function getProcessStatusBuckets(): Promise<Array<{ status: string;
 
 // Permissions
 export async function hasPermission(doctype: string, ptype = "read") {
-  const r = await api.get("/method/frappe.has_permission", { params: { doctype, ptype } });
-  return !!r.data.message;
+  const r = await api.get("/method/salitemiret.api.auth.has_doctype_permission", { params: { doctype, ptype }, __skipAuthRedirect: true } as any);
+  const msg = r.data?.message ?? r.data;
+  return !!msg;
 }
 
 export async function bootstrapPermissions(dts: string[]) {

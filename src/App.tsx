@@ -76,6 +76,7 @@ const router = createBrowserRouter([
   { path: "/sponsorships", element: <AuthedLayout><Sponsorships /></AuthedLayout> },
   { path: "/newcomers", element: <AuthedLayout><Newcomers /></AuthedLayout> },
   { path: "/volunteers", element: <AuthedLayout><Volunteers /></AuthedLayout> },
+  { path: "/volunteers/admin", element: <AuthedLayout><Volunteers /></AuthedLayout> },
   { path: "/volunteers/:volunteerId", element: <AuthedLayout><VolunteerDetail /></AuthedLayout> },
   { path: "/volunteers/bulk-upload", element: <AuthedLayout><VolunteerBulkUpload /></AuthedLayout> },
   { path: "/media", element: <AuthedLayout><Media /></AuthedLayout> },
