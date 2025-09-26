@@ -351,6 +351,30 @@ export async function listMySponsorships(limit = 50) {
   return r.data?.message ?? r.data;
 }
 
+// Family
+export async function listMyFamily(member_name?: string) {
+  const r = await api.get("/method/salitemiret.api.member.list_my_family", { params: { member_name }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function upsertFamilyMember(child: any) {
+  const r = await api.post("/method/salitemiret.api.member.upsert_family_member", { child } as any);
+  return r.data?.message ?? r.data;
+}
+export async function deleteFamilyMember(rowname: string) {
+  const r = await api.post("/method/salitemiret.api.member.delete_family_member", { rowname } as any);
+  return r.data?.message ?? r.data;
+}
+
+// Status & Tithe
+export async function getMyStatus() {
+  const r = await api.get("/method/salitemiret.api.member.get_my_status", { __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function setMyTitheCommitment(payload: { committed: boolean; monthly_amount?: number; method?: string }) {
+  const r = await api.post("/method/salitemiret.api.member.set_my_tithe_commitment", { committed: payload.committed ? 1 : 0, monthly_amount: payload.monthly_amount, method: payload.method } as any);
+  return r.data?.message ?? r.data;
+}
+
 // Public: request volunteer onboarding
 export async function requestVolunteer(input: {
   email: string;

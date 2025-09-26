@@ -15,7 +15,7 @@ import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMyMember, updateMyMember, listMyPayments, listMySponsorships } from "@/lib/api";
+import { getMyMember, updateMyMember, listMyPayments, listMySponsorships, listMyFamily, upsertFamilyMember, deleteFamilyMember, getMyStatus, setMyTitheCommitment } from "@/lib/api";
 
 export default function Membership() {
   const qc = useQueryClient();
@@ -23,7 +23,12 @@ export default function Membership() {
   const meQ = useQuery({ queryKey: ["me-member"], queryFn: getMyMember });
   const payQ = useQuery({ queryKey: ["me-payments"], queryFn: () => listMyPayments(50), enabled: tab===2 });
   const spQ = useQuery({ queryKey: ["me-sponsorships"], queryFn: () => listMySponsorships(50), enabled: tab===3 });
+  const famQ = useQuery({ queryKey: ["me-family"], queryFn: () => listMyFamily(), enabled: tab===0 });
+  const statusQ = useQuery({ queryKey: ["me-status"], queryFn: getMyStatus, enabled: tab===1 });
   const mu = useMutation({ mutationFn: (patch: any) => updateMyMember(patch), onSuccess: () => qc.invalidateQueries({ queryKey: ["me-member"] }) });
+  const muFam = useMutation({ mutationFn: (child:any) => upsertFamilyMember(child), onSuccess: () => qc.invalidateQueries({ queryKey: ["me-family"] }) });
+  const muFamDel = useMutation({ mutationFn: (name:string) => deleteFamilyMember(name), onSuccess: () => qc.invalidateQueries({ queryKey: ["me-family"] }) });
+  const muTithe = useMutation({ mutationFn: (p:any) => setMyTitheCommitment(p), onSuccess: () => qc.invalidateQueries({ queryKey: ["me-status"] }) });
 
   const m = meQ.data || {};
 
@@ -40,26 +45,83 @@ export default function Membership() {
         </Tabs>
 
         {tab===0 && (
-          <Stack spacing={2} maxWidth={640}>
-            <Alert severity="info">Update your profile information.</Alert>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="First name" value={m.first_name || ""} onChange={(e)=>mu.mutate({ first_name: e.target.value })} sx={{ flex: 1 }}/>
-              <TextField label="Last name" value={m.last_name || ""} onChange={(e)=>mu.mutate({ last_name: e.target.value })} sx={{ flex: 1 }}/>
+          <Stack spacing={3}>
+            <Stack spacing={2} maxWidth={640}>
+              <Alert severity="info">Update your profile information.</Alert>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField label="First name" value={m.first_name || ""} onChange={(e)=>mu.mutate({ first_name: e.target.value })} sx={{ flex: 1 }}/>
+                <TextField label="Last name" value={m.last_name || ""} onChange={(e)=>mu.mutate({ last_name: e.target.value })} sx={{ flex: 1 }}/>
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField label="Phone" value={m.phone || ""} onChange={(e)=>mu.mutate({ phone: e.target.value })} sx={{ flex: 1 }}/>
+                <TextField label="Gender" value={m.gender || ""} onChange={(e)=>mu.mutate({ gender: e.target.value })} sx={{ flex: 1 }}/>
+              </Stack>
+              <TextField label="Marital status" value={m.marital_status || ""} onChange={(e)=>mu.mutate({ marital_status: e.target.value })} sx={{ maxWidth: 320 }}/>
             </Stack>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="Phone" value={m.phone || ""} onChange={(e)=>mu.mutate({ phone: e.target.value })} sx={{ flex: 1 }}/>
-              <TextField label="Gender" value={m.gender || ""} onChange={(e)=>mu.mutate({ gender: e.target.value })} sx={{ flex: 1 }}/>
+
+            <Stack spacing={2}>
+              <Typography variant="subtitle1">Family</Typography>
+              <Table size="small">
+                <TableHead><TableRow><TableCell>Name</TableCell><TableCell>Relation</TableCell><TableCell>DOB</TableCell><TableCell>Phone</TableCell><TableCell>Email</TableCell><TableCell width={80}></TableCell></TableRow></TableHead>
+                <TableBody>
+                  {(famQ.data || []).map((row:any)=> (
+                    <TableRow key={row.name}>
+                      <TableCell>
+                        <TextField defaultValue={row.full_name} size="small" onBlur={(e)=>muFam.mutate({ name: row.name, full_name: e.target.value })} />
+                      </TableCell>
+                      <TableCell>
+                        <TextField defaultValue={row.relation} size="small" onBlur={(e)=>muFam.mutate({ name: row.name, relation: e.target.value })} />
+                      </TableCell>
+                      <TableCell>
+                        <TextField defaultValue={row.dob} size="small" onBlur={(e)=>muFam.mutate({ name: row.name, dob: e.target.value })} />
+                      </TableCell>
+                      <TableCell>
+                        <TextField defaultValue={row.phone} size="small" onBlur={(e)=>muFam.mutate({ name: row.name, phone: e.target.value })} />
+                      </TableCell>
+                      <TableCell>
+                        <TextField defaultValue={row.email} size="small" onBlur={(e)=>muFam.mutate({ name: row.name, email: e.target.value })} />
+                      </TableCell>
+                      <TableCell>
+                        <Button color="error" size="small" onClick={()=>{ if (confirm("Delete family member?")) muFamDel.mutate(row.name); }}>Delete</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell><TextField size="small" placeholder="Full name" id="fam-fullname" /></TableCell>
+                    <TableCell><TextField size="small" placeholder="Spouse/Child" id="fam-relation" /></TableCell>
+                    <TableCell><TextField size="small" placeholder="YYYY-MM-DD" id="fam-dob" /></TableCell>
+                    <TableCell><TextField size="small" placeholder="Phone" id="fam-phone" /></TableCell>
+                    <TableCell><TextField size="small" placeholder="Email" id="fam-email" /></TableCell>
+                    <TableCell><Button size="small" onClick={()=>{
+                      const full_name=(document.getElementById("fam-fullname") as HTMLInputElement)?.value || "";
+                      const relation=(document.getElementById("fam-relation") as HTMLInputElement)?.value || "";
+                      const dob=(document.getElementById("fam-dob") as HTMLInputElement)?.value || "";
+                      const phone=(document.getElementById("fam-phone") as HTMLInputElement)?.value || "";
+                      const email=(document.getElementById("fam-email") as HTMLInputElement)?.value || "";
+                      muFam.mutate({ full_name, relation, dob, phone, email });
+                    }}>Add</Button></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+              {/* Turning-18 banner (client-only heuristic) */}
+              {Array.isArray(famQ.data) && famQ.data.some((r:any)=> r.relation==="Child" && r.dob && isTurning18Today(r.dob)) && (
+                <Alert severity="warning">A child is turning 18 today. Please review their membership status.</Alert>
+              )}
             </Stack>
-            <TextField label="Marital status" value={m.marital_status || ""} onChange={(e)=>mu.mutate({ marital_status: e.target.value })} sx={{ maxWidth: 320 }}/>
           </Stack>
         )}
 
         {tab===1 && (
-          <Box>
+          <Stack spacing={2} maxWidth={560}>
             <Typography color="text.secondary">Membership Status</Typography>
-            <Typography variant="h5" sx={{ mt: 1 }}>{m.status || "Unknown"}</Typography>
-            <Typography color="text.secondary" sx={{ mt: 2 }}>Tithe commitments and reminders — coming soon.</Typography>
-          </Box>
+            <Typography variant="h5" sx={{ mt: 1 }}>{statusQ.data?.status || m.status || "Unknown"}</Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField label="Monthly Tithe" type="number" size="small" onBlur={(e)=>muTithe.mutate({ committed: true, monthly_amount: Number(e.target.value) || 0 })} />
+              <TextField label="Method" size="small" onBlur={(e)=>muTithe.mutate({ committed: true, method: e.target.value })} />
+              <Button variant="outlined" onClick={()=>muTithe.mutate({ committed: false })}>Clear Commitment</Button>
+            </Stack>
+            {statusQ.data?.last_payment && <Typography color="text.secondary">Last payment: {new Date(statusQ.data.last_payment).toLocaleDateString()}</Typography>}
+          </Stack>
         )}
 
         {tab===2 && (
@@ -94,4 +156,17 @@ export default function Membership() {
       </CardContent>
     </Card>
   );
+}
+
+function isTurning18Today(dob: string) {
+  try {
+    const d = new Date(dob);
+    const today = new Date();
+    const eighteen = new Date(d.getFullYear() + 18, d.getMonth(), d.getDate());
+    return (
+      eighteen.getFullYear() === today.getFullYear() &&
+      eighteen.getMonth() === today.getMonth() &&
+      eighteen.getDate() === today.getDate()
+    );
+  } catch { return false; }
 }
