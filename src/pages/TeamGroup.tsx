@@ -19,8 +19,7 @@ import { listVolunteerGroups, listGroupMembers, assignTodoToVolunteer } from "@/
 export default function TeamGroup() {
   const qc = useQueryClient();
   const groupsQ = useQuery({ queryKey: ["tl-groups"], queryFn: () => listVolunteerGroups() });
-  const [group, setGroup] = useState<string>("
-");
+  const [group, setGroup] = useState<string>("");
   const membersQ = useQuery({ queryKey: ["tl-members", group], queryFn: () => listGroupMembers(group), enabled: !!group });
   const [task, setTask] = useState<{ volunteer?: string; subject: string; due_date?: string }>({ subject: "" });
   const assign = useMutation({ mutationFn: ({ volunteer, subject, due_date }: any) => assignTodoToVolunteer(volunteer, subject, due_date) });
