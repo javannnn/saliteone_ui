@@ -171,6 +171,12 @@ export async function listMembers() {
   return r.data.data as MemberRow[];
 }
 
+// Admin helper: create member (reuses volunteer API for member creation)
+export async function adminCreateMember(payload: { first_name: string; last_name: string; email: string; phone?: string; status?: string }) {
+  const r = await api.post("/method/salitemiret.api.volunteer.create_member", payload as any);
+  return r.data?.message ?? r.data;
+}
+
 export type PaymentRow = { name: string; member: string; amount: number; status: string };
 export async function listPayments() {
   const dt = encodeURIComponent("Payment");
