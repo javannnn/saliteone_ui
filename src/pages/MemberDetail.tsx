@@ -33,11 +33,12 @@ export default function MemberDetail() {
     }
   });
 
+  const [tab, setTab] = useState(0);
+
   if (q.isLoading) return <Card className="p-4"><Spinner /></Card>;
   if (q.isError || !q.data) return <Card className="p-4 text-red-600">Not found.</Card>;
   const m = q.data;
   const fullName = [m.first_name, m.last_name].filter(Boolean).join(" ") || m.name;
-  const [tab, setTab] = useState(0);
 
   const paymentsQ = useQuery({
     queryKey: ["payments", name],
