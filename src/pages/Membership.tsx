@@ -16,7 +16,7 @@ import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMyMember, updateMyMember, listMyPayments, listMySponsorships, listMyFamily, upsertFamilyMember, deleteFamilyMember, getMyStatus, setMyTitheCommitment } from "@/lib/api";
+import { getMyMember, updateMyMember, listMyPayments, listMySponsorships, listMyFamily, upsertFamilyMember, deleteFamilyMember, getMyStatus, setMyTitheCommitment, listMyNotifications } from "@/lib/api";
 
 export default function Membership() {
   const qc = useQueryClient();
@@ -26,6 +26,7 @@ export default function Membership() {
   const spQ = useQuery({ queryKey: ["me-sponsorships"], queryFn: () => listMySponsorships(50), enabled: tab===3 });
   const famQ = useQuery({ queryKey: ["me-family"], queryFn: () => listMyFamily(), enabled: tab===0 });
   const statusQ = useQuery({ queryKey: ["me-status"], queryFn: getMyStatus, enabled: tab===1 });
+  const notifQ = useQuery({ queryKey: ["me-notifs"], queryFn: () => listMyNotifications(5) });
   const mu = useMutation({ mutationFn: (patch: any) => updateMyMember(patch), onSuccess: () => qc.invalidateQueries({ queryKey: ["me-member"] }) });
   const muFam = useMutation({ mutationFn: (child:any) => upsertFamilyMember(child), onSuccess: () => qc.invalidateQueries({ queryKey: ["me-family"] }) });
   const muFamDel = useMutation({ mutationFn: (name:string) => deleteFamilyMember(name), onSuccess: () => qc.invalidateQueries({ queryKey: ["me-family"] }) });
@@ -37,6 +38,11 @@ export default function Membership() {
     <Card>
       <CardContent>
         <Typography variant="h6" sx={{ mb: 1 }}>My Membership</Typography>
+        {Array.isArray(notifQ.data) && notifQ.data.length > 0 && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {notifQ.data[0].subject}: {notifQ.data[0].email_content}
+          </Alert>
+        )}
         <Tabs value={tab} onChange={(_,x)=>setTab(x)} sx={{ mb: 2 }}>
           <Tab label="Profile & Family" />
           <Tab label="Status" />

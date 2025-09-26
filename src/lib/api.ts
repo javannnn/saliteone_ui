@@ -374,6 +374,10 @@ export async function setMyTitheCommitment(payload: { committed: boolean; monthl
   const r = await api.post("/method/salitemiret.api.member.set_my_tithe_commitment", { committed: payload.committed ? 1 : 0, monthly_amount: payload.monthly_amount, method: payload.method } as any);
   return r.data?.message ?? r.data;
 }
+export async function listMyNotifications(limit = 20) {
+  const r = await api.get("/method/salitemiret.api.member.list_my_notifications", { params: { limit }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
 
 // Volunteer Service Logs
 export async function createServiceLog(payload: any) {
