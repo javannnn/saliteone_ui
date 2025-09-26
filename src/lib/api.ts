@@ -312,6 +312,26 @@ export async function createToDo(params: { allocated_to: string; description: st
   return (r.data?.message ?? r.data);
 }
 
+export async function updateToDo(name: string, status: string = "Closed") {
+  const r = await api.post("/method/salitemiret.api.volunteer.update_todo", { name, status } as any);
+  return (r.data?.message ?? r.data);
+}
+
+export async function listWorkflowHistory(member_email?: string, limit = 50) {
+  const r = await api.get("/method/salitemiret.api.volunteer.list_workflow_history", { params: { member_email, limit }, __skipAuthRedirect: true } as any);
+  return (r.data?.message ?? r.data) as Array<{ name:string; workflow_process?:string; from_step?:string; to_step?:string; actor?:string; modified?:string }>;
+}
+
+export async function createMember(data: { first_name: string; last_name: string; email: string; phone?: string }) {
+  const r = await api.post("/method/salitemiret.api.volunteer.create_member", data as any);
+  return (r.data?.message ?? r.data) as { name: string };
+}
+
+export async function ensureSystemUserForMember(member: string, roles?: string[]) {
+  const r = await api.post("/method/salitemiret.api.auth.ensure_system_user_for_member", { member, roles } as any);
+  return (r.data?.message ?? r.data) as { user: string };
+}
+
 // Public: request volunteer onboarding
 export async function requestVolunteer(input: {
   email: string;

@@ -55,7 +55,7 @@ export default function VolunteerBulkUpload() {
             <input type="file" hidden accept=".xlsx,.xls" onChange={onFile}/>
           </Button>
           {rows.length>0 && <Button variant="contained" onClick={importAll}>Import {rows.length}</Button>}
-          <Button href="/templates/volunteers_template.xlsx" download>Download Template</Button>
+          <Button variant="text" onClick={()=>downloadTemplate()}>Download Template</Button>
         </Stack>
         {ok && <Alert severity="success">{ok}</Alert>}
         {errors.map((er,i)=><Alert key={i} severity="error">{er}</Alert>)}
@@ -81,3 +81,9 @@ export default function VolunteerBulkUpload() {
   );
 }
 
+function downloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([["first_name","last_name","email","phone","group","services"],["Hanna","Tesfay","hanna@example.com","555-1234","Ushering","Logistics"]]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Volunteers");
+  XLSX.writeFile(wb, "volunteers_template.xlsx");
+}
