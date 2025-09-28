@@ -18,6 +18,7 @@ import Media from "@/pages/Media";
 import Schools from "@/pages/Schools";
 import ProcessDetail from "@/pages/ProcessDetail";
 import MemberDetail from "@/pages/MemberDetail";
+import MembersBulkUpload from "@/pages/MembersBulkUpload";
 import Membership from "@/pages/Membership";
 import Requests from "@/pages/Requests";
 import TeamGroup from "@/pages/TeamGroup";
@@ -28,6 +29,7 @@ import FinanceDashboard from "@/pages/FinanceDashboard";
 import Reports from "@/pages/Reports";
 import AdminDashboard from "@/pages/AdminDashboard";
 import Notifications from "@/pages/Notifications";
+import Approvals from "@/pages/Approvals";
 import RegisterVolunteer from "@/pages/RegisterVolunteer";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
@@ -84,6 +86,7 @@ const router = createBrowserRouter([
   { path: "/processes/:name", element: <AuthedLayout><ProcessDetail /></AuthedLayout> },
   { path: "/members/:name", element: <AuthedLayout><MemberDetail /></AuthedLayout> },
   { path: "/members", element: <AuthedLayout><Members /></AuthedLayout> },
+  { path: "/members/bulk-upload", element: <AuthedLayout><MembersBulkUpload /></AuthedLayout> },
   { path: "/payments", element: <AuthedLayout><Payments /></AuthedLayout> },
   { path: "/sponsorships", element: <AuthedLayout><Sponsorships /></AuthedLayout> },
   { path: "/newcomers", element: <AuthedLayout><Newcomers /></AuthedLayout> },
@@ -101,6 +104,7 @@ const router = createBrowserRouter([
   { path: "/reports", element: <AuthedLayout><Reports /></AuthedLayout> },
   { path: "/admin", element: <AuthedLayout><AdminDashboard /></AuthedLayout> },
   { path: "/notifications", element: <AuthedLayout><Notifications /></AuthedLayout> },
+  { path: "/approvals", element: <AuthedLayout><Approvals /></AuthedLayout> },
   { path: "/media", element: <AuthedLayout><Media /></AuthedLayout> },
   { path: "/schools", element: <AuthedLayout><Schools /></AuthedLayout> },
   { path: "/register/volunteer", element: <RegisterVolunteer /> },

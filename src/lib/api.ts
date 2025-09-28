@@ -11,7 +11,7 @@ export const api = axios.create({
 // (removed duplicate early auth helpers)
 
 export async function ping() {
-  const r = await api.get("/method/ping");
+  const r = await api.get("/method/ping", { [SKIP_REDIRECT_KEY]: true } as any);
   return r.data;
 }
 
@@ -214,13 +214,19 @@ export async function listVolunteers() {
   return r.data.data as Array<{ name:string; member:string; group?:string; services?:string }>;
 }
 
-export type MediaRequestRow = { name: string; title: string; status: string };
+export type MediaRequestRow = { name: string; title: string; status: string; requester?: string; modified?: string };
 export async function listMediaRequests() {
   const dt = encodeURIComponent("Media Request");
   const r = await api.get(`/resource/${dt}`, {
-    params: { fields: '["name","title","status"]', limit_page_length: 20 }
+    params: { fields: '["name","title","status","requester","modified"]', limit_page_length: 20 }
   });
   return r.data.data as MediaRequestRow[];
+}
+
+// Create Media Request (generic resource create)
+export async function createMediaRequest(payload: { requester?: string; title: string; description?: string; status?: string }) {
+  const r = await api.post("/resource/Media%20Request", payload as any);
+  return r.data?.data || (r.data?.message ?? r.data);
 }
 
 export type SchoolEnrollmentRow = { name: string; member?: string; child_name?: string; school_type: string };
@@ -349,8 +355,8 @@ export async function updateMyMember(patch: any) {
   const r = await api.post("/method/salitemiret.api.member.update_my_member", { patch } as any);
   return r.data?.message ?? r.data;
 }
-export async function listMyPayments(limit = 50) {
-  const r = await api.get("/method/salitemiret.api.member.list_my_payments", { params: { limit }, __skipAuthRedirect: true } as any);
+export async function listMyPayments(limit = 50, date_from?: string, date_to?: string, method?: string, status?: string) {
+  const r = await api.get("/method/salitemiret.api.member.list_my_payments", { params: { limit, date_from, date_to, method, status }, __skipAuthRedirect: true } as any);
   return r.data?.message ?? r.data;
 }
 export async function listMySponsorships(limit = 50) {
@@ -445,6 +451,24 @@ export async function assignTodoToVolunteer(volunteer: string, subject: string, 
 }
 export async function groupReport(group: string, date_from?: string, date_to?: string) {
   const r = await api.get("/method/salitemiret.api.volunteer.group_report", { params: { group, date_from, date_to }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+
+// Approvals
+export async function listPendingMembers(limit=50, start=0) {
+  const r = await api.get("/method/salitemiret.api.approvals.list_pending_members", { params: { limit, start }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function listPendingMediaRequests(limit=50, start=0) {
+  const r = await api.get("/method/salitemiret.api.approvals.list_pending_media_requests", { params: { limit, start }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function listSubmittedServiceLogs(limit=50, start=0) {
+  const r = await api.get("/method/salitemiret.api.approvals.list_submitted_service_logs", { params: { limit, start }, __skipAuthRedirect: true } as any);
+  return r.data?.message ?? r.data;
+}
+export async function adminSetMemberStatus(name: string, status: string) {
+  const r = await api.post("/method/salitemiret.api.approvals.admin_set_member_status", { name, status } as any);
   return r.data?.message ?? r.data;
 }
 

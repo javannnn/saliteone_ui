@@ -29,6 +29,17 @@ import {
   getPendingApprovalsCount,
   getRecentActivity,
   getProcessStatusBuckets,
+  listMyToDos,
+  updateToDo,
+  getMyStatus,
+  getMemberByEmail,
+  getVolunteerByMember,
+  listSubmittedServiceLogs,
+  listPendingMembers,
+  listPendingMediaRequests,
+  approveServiceLog,
+  rejectServiceLog,
+  adminSetMemberStatus,
   type RecentItem,
 } from "@/lib/api";
 import { useAuth } from "@/stores/auth";
@@ -75,6 +86,14 @@ export default function Dashboard() {
   const qApprovals = useQuery({ queryKey: ["approvals", "pending"], queryFn: getPendingApprovalsCount });
   const qRecent = useQuery({ queryKey: ["processes", "recent"], queryFn: () => getRecentActivity(8) });
   const qBuckets = useQuery({ queryKey: ["processes", "buckets"], queryFn: getProcessStatusBuckets });
+  const qToDos = useQuery({ queryKey: ["todos", user?.name], queryFn: () => listMyToDos(5), enabled: !!user?.name });
+  const qStatus = useQuery({ queryKey: ["me-status"], queryFn: getMyStatus, enabled: !!user?.name });
+  const qMember = useQuery({ queryKey: ["me-member-id"], queryFn: () => getMemberByEmail(user!.name), enabled: !!user?.name });
+  const qVolunteer = useQuery({ queryKey: ["me-vol" , qMember.data?.name], queryFn: () => getVolunteerByMember(qMember.data!.name), enabled: !!qMember.data?.name });
+  const qApprMembers = useQuery({ queryKey: ["dash-appr","members"], queryFn: () => listPendingMembers(5,0), enabled: isApprover });
+  const qApprLogs = useQuery({ queryKey: ["dash-appr","logs"], queryFn: () => listSubmittedServiceLogs(5,0), enabled: isApprover });
+  const qApprMedia = useQuery({ queryKey: ["dash-appr","media"], queryFn: () => listPendingMediaRequests(5,0), enabled: isApprover });
+  const muClose = useQueryClient().getMutationCache();
 
   const chartData = useMemo(() => {
     const arr = (qRecent.data || []) as RecentItem[];
@@ -99,6 +118,48 @@ export default function Dashboard() {
       </Paper>
 
       <Grid container spacing={2}>
+        {/* My Action Items */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={0} sx={{ p: 2.5, border: (t)=>`1px solid ${t.palette.divider}` }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+              <Typography variant="overline" color="text.secondary">My Action Items</Typography>
+              <Button size="small" onClick={()=> nav('/requests')}>Open Requests</Button>
+            </Stack>
+            {!qToDos.data ? (
+              <Skeleton height={28} />
+            ) : (qToDos.data as any[]).length === 0 ? (
+              <Typography color="text.secondary">No open items. Great job!</Typography>
+            ) : (
+              <List dense>
+                {(qToDos.data as any[]).map((t) => (
+                  <ListItemButton key={t.name} onClick={()=> nav('/volunteers')}>
+                    <ListItemText primary={t.description} secondary={t.reference_type ? `${t.reference_type} • ${t.reference_name||''}` : undefined} />
+                    <Button size="small" onClick={(e)=>{ e.stopPropagation(); updateToDo(t.name, 'Closed'); }}>{'Close'}</Button>
+                  </ListItemButton>
+                ))}
+              </List>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* My Membership Snapshot */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={0} sx={{ p: 2.5, border: (t)=>`1px solid ${t.palette.divider}` }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+              <Typography variant="overline" color="text.secondary">My Membership</Typography>
+              <Button size="small" onClick={()=> nav('/membership')}>Open</Button>
+            </Stack>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>{qStatus.data?.status || 'Unknown'}</Typography>
+            {qStatus.data?.last_payment && (
+              <Typography color="text.secondary">Last payment: {new Date(qStatus.data.last_payment).toLocaleDateString()}</Typography>
+            )}
+            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+              <Button size="small" variant="outlined" onClick={()=> nav('/payments?q=me')}>View Payments</Button>
+              {isVolunteer && <Button size="small" variant="contained" onClick={()=> nav('/volunteers')}>Volunteer Hub</Button>}
+            </Stack>
+          </Paper>
+        </Grid>
+
         {/* Get Started panel when empty */}
         {((qTasks.data ?? 0) === 0 && (qApprovals.data ?? 0) === 0 && (!qBuckets.data || qBuckets.data.length === 0)) && (
           <Grid item xs={12}>
@@ -207,6 +268,56 @@ export default function Dashboard() {
             </Box>
           </Paper>
         </Grid>
+
+        {/* Quick Approvals (if approver) */}
+        {isApprover && (
+          <Grid item xs={12}>
+            <Paper elevation={0} sx={{ p: 2.5, border: (t) => `1px solid ${t.palette.divider}` }}>
+              <Typography variant="overline" color="text.secondary">Approvals</Typography>
+              <Divider sx={{ my: 1.5 }} />
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={4}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Members</Typography>
+                  {!(qApprMembers.data || []).length ? <Typography color="text.secondary">None</Typography> : (
+                    <List dense>
+                      {(qApprMembers.data || []).map((m:any)=> (
+                        <ListItemButton key={m.name} onClick={()=> nav(`/members?q=${encodeURIComponent(m.name)}`)}>
+                          <ListItemText primary={`${m.first_name} ${m.last_name}`} secondary={m.email} />
+                          <Button size="small" onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); adminSetMemberStatus(m.name, 'Active'); }}>Activate</Button>
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  )}
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Service Logs</Typography>
+                  {!(qApprLogs.data || []).length ? <Typography color="text.secondary">None</Typography> : (
+                    <List dense>
+                      {(qApprLogs.data || []).map((r:any)=> (
+                        <ListItemButton key={r.name} onClick={()=> nav('/team/approvals')}>
+                          <ListItemText primary={`${r.service_type} • ${r.service_date}`} secondary={`${r.group||''}`} />
+                          <Button size="small" onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); approveServiceLog(r.name); }}>Approve</Button>
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  )}
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Media Requests</Typography>
+                  {!(qApprMedia.data || []).length ? <Typography color="text.secondary">None</Typography> : (
+                    <List dense>
+                      {(qApprMedia.data || []).map((r:any)=> (
+                        <ListItemButton key={r.name} onClick={()=> nav('/media')}>
+                          <ListItemText primary={r.title} secondary={r.status} />
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  )}
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+        )}
 
         {/* Recent list */}
         <Grid item xs={12}>

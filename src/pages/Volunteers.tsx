@@ -17,6 +17,12 @@ import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
+import Menu from "@mui/material/Menu";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Table from "@mui/material/Table";
@@ -51,6 +57,7 @@ function AdminTable({
   onDelete: (name: string) => void;
   onAssignTask: (email: string) => void;
 }) {
+  const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement|null; row?: any }>({ el: null });
   return (
     <Card variant="outlined">
       <CardContent>
@@ -95,6 +102,9 @@ function AdminTable({
                   />
                 </Box>
                 <Box component="td" sx={{ whiteSpace: "nowrap" }}>
+                  <IconButton size="small" onClick={(e)=> setMenuAnchor({ el: e.currentTarget, row: v })} aria-label="more" sx={{ mr: 1 }}>
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
                   <Button
                     size="small"
                     startIcon={<AddTaskIcon />}
@@ -111,6 +121,17 @@ function AdminTable({
             ))}
           </Box>
         </Box>
+        <Menu open={!!menuAnchor.el} anchorEl={menuAnchor.el} onClose={()=> setMenuAnchor({ el: null })}>
+          <MenuItem onClick={()=>{ window.location.href = `/members?q=${encodeURIComponent(menuAnchor.row?.member||'')}`; setMenuAnchor({ el: null }); }}>
+            <ListItemIcon><OpenInNewIcon fontSize="small"/></ListItemIcon>Open Member
+          </MenuItem>
+          <MenuItem onClick={()=>{ window.location.href = `/payments?q=${encodeURIComponent(menuAnchor.row?.member||'')}`; setMenuAnchor({ el: null }); }}>
+            <ListItemIcon><PaymentsIcon fontSize="small"/></ListItemIcon>View Payments
+          </MenuItem>
+          <MenuItem disabled={!menuAnchor.row?.email} onClick={()=>{ onAssignTask(menuAnchor.row?.email); setMenuAnchor({ el: null }); }}>
+            <ListItemIcon><AssignmentIcon fontSize="small"/></ListItemIcon>Create ToDo
+          </MenuItem>
+        </Menu>
       </CardContent>
     </Card>
   );

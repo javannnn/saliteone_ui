@@ -11,12 +11,23 @@ import TableBody from "@mui/material/TableBody";
 import SkeletonTable from "@/components/ui/SkeletonTable";
 import EmptyState from "@/components/ui/EmptyState";
 import { useQuery } from "@tanstack/react-query";
+import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import { useNavigate } from "react-router-dom";
 import { listMyNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/api";
 import { useState } from "react";
 import { useUI } from "@/stores/ui";
 import { tSafe } from "@/lib/i18n";
 
 export default function Notifications() {
+  const navigate = useNavigate();
+  const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement|null; row?: any }>({ el: null });
   const { locale } = useUI();
   const [page, setPage] = useState(0);
   const pageSize = 20;
@@ -36,7 +47,7 @@ export default function Notifications() {
         {!q.data ? <SkeletonTable rows={6}/> : (
           rows.length === 0 ? <EmptyState title="No notifications" /> : (
             <Table size="small">
-              <TableHead><TableRow><TableCell>Date</TableCell><TableCell>Subject</TableCell><TableCell>Message</TableCell><TableCell>Status</TableCell><TableCell>Action</TableCell></TableRow></TableHead>
+              <TableHead><TableRow><TableCell>Date</TableCell><TableCell>Subject</TableCell><TableCell>Message</TableCell><TableCell>Status</TableCell><TableCell>Action</TableCell><TableCell></TableCell></TableRow></TableHead>
               <TableBody>
                 {rows.map((n:any)=> (
                   <TableRow key={n.name}>
@@ -47,12 +58,24 @@ export default function Notifications() {
                     <TableCell>
                       {!n.read && <Button size="small" onClick={async ()=>{ await markNotificationRead(n.name); q.refetch(); }}>{tSafe("mark_read", locale, "Mark as read")}</Button>}
                     </TableCell>
+                    <TableCell align="right"><IconButton size="small" onClick={(e)=> setMenuAnchor({ el: e.currentTarget, row: n })}><MoreVertIcon fontSize="small"/></IconButton></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )
         )}
+        <Menu open={!!menuAnchor.el} anchorEl={menuAnchor.el} onClose={()=> setMenuAnchor({ el: null })}>
+          <MenuItem onClick={()=>{ navigate('/membership'); setMenuAnchor({ el: null }); }}>
+            <ListItemIcon><OpenInNewIcon fontSize="small"/></ListItemIcon>Open My Membership
+          </MenuItem>
+          <MenuItem onClick={()=>{ navigate('/payments'); setMenuAnchor({ el: null }); }}>
+            <ListItemIcon><PaymentsIcon fontSize="small"/></ListItemIcon>Open Payments
+          </MenuItem>
+          <MenuItem onClick={()=>{ navigate('/volunteers'); setMenuAnchor({ el: null }); }}>
+            <ListItemIcon><AssignmentIcon fontSize="small"/></ListItemIcon>Open Volunteer Hub
+          </MenuItem>
+        </Menu>
         <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 2 }}>
           <Button disabled={page===0} onClick={()=>setPage((p)=>Math.max(0,p-1))}>Prev</Button>
           <Typography variant="body2" sx={{ alignSelf: "center" }}>Page {page+1}</Typography>
@@ -62,4 +85,3 @@ export default function Notifications() {
     </Card>
   );
 }
-

@@ -1,37 +1,82 @@
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import MenuItem from "@mui/material/MenuItem";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { listPayments } from "@/lib/api";
-import { Card } from "@/components/ui/card";
-import Spinner from "@/components/ui/spinner";
+import FiltersBar from "@/components/ui/FiltersBar";
+import DataTable from "@/components/ui/DataTable";
+import { useMemo, useState } from "react";
 
 export default function Payments() {
-  const { data, isLoading, isError } = useQuery({ queryKey: ["payments"], queryFn: listPayments });
+  const q = useQuery({ queryKey: ["payments"], queryFn: listPayments });
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [status, setStatus] = useState("");
+  const [qtext, setQtext] = useState("");
+  useEffect(()=>{
+    const url = new URLSearchParams(location.search);
+    const v = url.get('q') || '';
+    const s = url.get('status') || '';
+    if (v) setQtext(v);
+    if (s) setStatus(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(()=>{
+    const params = new URLSearchParams();
+    if (qtext) params.set('q', qtext);
+    if (status) params.set('status', status);
+    const search = params.toString();
+    navigate(search ? `?${search}` : '/payments', { replace: true });
+  }, [qtext, status]);
+  const data = useMemo(()=>{
+    const rows = q.data || [];
+    const withText = qtext ? rows.filter((r:any)=> [r.member, r.name].some(v=> String(v||"").toLowerCase().includes(qtext.toLowerCase()))) : rows;
+    return status ? withText.filter((r:any)=> (r.status||"") === status) : withText;
+  }, [q.data, status, qtext]);
+
+  function exportCSV(rows:any[]) {
+    const header = ["name","member","amount","status"];
+    const lines = [header.join(","), ...rows.map(r=> header.map(h=> r[h] ?? "").toString())];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "payments.csv"; a.click();
+  }
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Payments</h1>
+    <Stack spacing={2}>
+      <Typography variant="h6">Payments</Typography>
       <Card>
-        {isLoading && <div className="flex items-center gap-2"><Spinner /><span>Loading…</span></div>}
-        {isError && <div className="text-red-600">Failed to load.</div>}
-        {data && (
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="px-3 py-2 text-left">Member</th>
-                <th className="px-3 py-2 text-left">Amount</th>
-                <th className="px-3 py-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map(p => (
-                <tr key={p.name} className="border-b">
-                  <td className="px-3 py-2">{p.member}</td>
-                  <td className="px-3 py-2">{p.amount}</td>
-                  <td className="px-3 py-2 text-zinc-500">{p.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <CardContent>
+          <FiltersBar onReset={()=>{ setStatus(""); setQtext(""); navigate('/payments'); }} right={<Button onClick={()=> exportCSV(data)}>Export CSV</Button>}>
+            <TextField size="small" label="Search" value={qtext} onChange={(e)=>{ setQtext(e.target.value); }} placeholder="Member or ID" />
+            <TextField size="small" label="Status" select value={status} onChange={(e)=>setStatus(String(e.target.value))}>
+              <MenuItem value="">All</MenuItem>
+              {['Pending','Paid','Failed'].map(s=> (<MenuItem key={s} value={s}>{s}</MenuItem>))}
+            </TextField>
+            <Button size="small" onClick={()=>{
+              const name = window.prompt('Save current filters as preset name');
+              if (!name) return;
+              const raw = localStorage.getItem('presets:payments');
+              const list = raw ? JSON.parse(raw) as Array<{name:string; value:any}> : [];
+              const value = { q: qtext, status };
+              const next = [...list.filter(p=>p.name!==name), { name, value }];
+              localStorage.setItem('presets:payments', JSON.stringify(next));
+            }}>Save preset</Button>
+          </FiltersBar>
+          <div style={{ marginTop: 8 }}>
+            <DataTable columns={[
+              { id: 'member', label: 'Member' },
+              { id: 'amount', label: 'Amount', align: 'right' },
+              { id: 'status', label: 'Status' },
+            ]} rows={data as any[]} initialSort={{ by: 'member', dir: 'asc' }} />
+          </div>
+        </CardContent>
       </Card>
-    </div>
+    </Stack>
   );
 }

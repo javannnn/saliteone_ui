@@ -1,4 +1,4 @@
-import { PropsWithChildren, useMemo } from "react";
+import { PropsWithChildren, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -13,6 +13,7 @@ import ListItemText from "@mui/material/ListItemText";
 import IconButton from "@mui/material/IconButton";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
@@ -43,10 +44,18 @@ import { logout } from "@/lib/api";
 import { tSafe } from "@/lib/i18n";
 import Badge from "@mui/material/Badge";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import Popover from "@mui/material/Popover";
+import ListItem from "@mui/material/ListItem";
+// removed unused ListItemSecondaryAction
+import CloseIcon from "@mui/icons-material/Close";
 import Button from "@mui/material/Button";
 import { useQuery } from "@tanstack/react-query";
-import { listMyNotifications, markAllNotificationsRead } from "@/lib/api";
+import Breadcrumbs from "@mui/material/Breadcrumbs";
+import CommandPalette from "@/components/ui/CommandPalette";
+import SearchIcon from "@mui/icons-material/Search";
+import { listMyNotifications, markAllNotificationsRead, markNotificationRead } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
+import QuickActions from "@/components/ui/QuickActions";
 
 const DRAWER_W = 280;
 const RAIL_W = 72;
@@ -71,6 +80,7 @@ const NAV: ReadonlyArray<NavItem> = [
 
   // Admin / Finance / Media
   { to: "/members", label: "Members Directory", icon: <PeopleIcon />, rolesAllowed: ["Admin"] },
+  { to: "/members/bulk-upload", label: "Members Bulk Upload", icon: <PeopleIcon />, rolesAllowed: ["Admin"] },
   { to: "/newcomers", label: "Newcomers", icon: <TravelExploreIcon />, rolesAllowed: ["Admin"] },
   { to: "/sponsorships", label: "Sponsorships", icon: <LoyaltyIcon />, rolesAllowed: ["Admin"] },
   { to: "/payments", label: "Payments & Tithes", icon: <PaymentsIcon />, rolesAllowed: ["Admin","Finance Admin"] },
@@ -102,6 +112,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
 
   async function doLogout() { try { await logout(); } catch {} clear(); window.location.href = "/"; }
 
+  const [cmdOpen, setCmdOpen] = useState(false);
   const DrawerContent = (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Toolbar sx={{ px: 2 }}>
@@ -145,7 +156,7 @@ export default function AppLayout({ children }: PropsWithChildren) {
             </ListItemButton>
         ))}
         {navOpen && <ListSubheader disableSticky>Admin Tools</ListSubheader>}
-        {NAV.filter(i => ["/admin","/members","/newcomers","/sponsorships","/payments","/finance","/reports","/schools","/media/admin","/settings"].includes(i.to))
+        {NAV.filter(i => ["/approvals","/admin","/members","/newcomers","/sponsorships","/payments","/finance","/reports","/schools","/media/admin","/settings"].includes(i.to))
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
           .map((item) => (
             <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
@@ -164,6 +175,9 @@ export default function AppLayout({ children }: PropsWithChildren) {
     </Box>
   );
 
+  const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
+  const notifOpen = Boolean(notifAnchor);
+
   return (
     <Box sx={{ display: "flex" }}>
       {/* App Bar */}
@@ -175,19 +189,60 @@ export default function AppLayout({ children }: PropsWithChildren) {
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" sx={{ flexGrow: 1 }} noWrap>Dashboard</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0 }}>
+            <Typography variant="h6" noWrap>{(NAV.find(n => n.to === pathname)?.label) || "Dashboard"}</Typography>
+            <Breadcrumbs maxItems={3} itemsBeforeCollapse={2} sx={{ fontSize: 12 }}>
+              <Link to="/">Home</Link>
+              {pathname.split('/').filter(Boolean).map((seg, idx, arr)=> {
+                const to = '/' + arr.slice(0, idx+1).join('/');
+                const label = NAV.find(n => n.to === to)?.label || seg;
+                return <Link key={to} to={to}>{label}</Link>;
+              })}
+            </Breadcrumbs>
+          </Box>
+          <IconButton color="inherit" onClick={()=> setCmdOpen(true)} title="Search (Ctrl+K)">
+            <SearchIcon />
+          </IconButton>
 
           <IconButton color="inherit" onClick={() => setLocale(locale === "en" ? "am" : "en")} title="Language">
             <TranslateIcon />
           </IconButton>
-          <IconButton color="inherit" onClick={() => navigate("/notifications")} title="Notifications">
+          <IconButton color="inherit" onClick={(e)=> setNotifAnchor(e.currentTarget)} title="Notifications">
             <Badge color="error" badgeContent={unread} invisible={unread===0}>
               <NotificationsNoneIcon />
             </Badge>
           </IconButton>
-          {unread > 0 && (
-            <Button color="inherit" size="small" onClick={async ()=>{ await markAllNotificationsRead(); notifQ.refetch(); }}>Mark all</Button>
-          )}
+          <Popover
+            open={notifOpen}
+            anchorEl={notifAnchor}
+            onClose={()=> setNotifAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{ sx: { width: 360, p: 1 } }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1, py: 0.5 }}>
+              <Typography variant="subtitle2">Notifications</Typography>
+              <IconButton size="small" onClick={()=> setNotifAnchor(null)}><CloseIcon fontSize="small"/></IconButton>
+            </Stack>
+            <Divider />
+            <List dense sx={{ maxHeight: 300, overflow: 'auto' }}>
+              {(notifQ.data || []).slice(0,8).map((n:any)=> (
+                <ListItem key={n.name} sx={{ py: 0.5 }} secondaryAction={!n.read && (
+                  <Button size="small" onClick={async ()=>{ await markNotificationRead(n.name); notifQ.refetch(); }}>Mark</Button>
+                )}>
+                  <ListItemText primary={n.subject} secondary={n.email_content} />
+                </ListItem>
+              ))}
+              {(!notifQ.data || notifQ.data.length === 0) && (
+                <ListItem><ListItemText primary="No notifications" /></ListItem>
+              )}
+            </List>
+            <Divider />
+            <Stack direction="row" justifyContent="space-between" sx={{ p: 1 }}>
+              <Button size="small" onClick={()=>{ setNotifAnchor(null); navigate('/notifications'); }}>Open inbox</Button>
+              <Button size="small" onClick={async ()=>{ await markAllNotificationsRead(); notifQ.refetch(); }}>Mark all read</Button>
+            </Stack>
+          </Popover>
           {roles?.[0] && <Chip size="small" label={roles[0]} sx={{ mx: 1 }} />}
           <ThemeToggleButton />
         </Toolbar>
@@ -218,6 +273,8 @@ export default function AppLayout({ children }: PropsWithChildren) {
       <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, mt: "64px", ml: isMdUp ? `${width}px` : 0 }}>
         {children}
       </Box>
+      <QuickActions />
+      <CommandPalette open={cmdOpen} onClose={()=> setCmdOpen(false)} />
     </Box>
   );
 }

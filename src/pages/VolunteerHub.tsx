@@ -11,6 +11,7 @@ import TableBody from "@mui/material/TableBody";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/stores/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMemberByEmail, getVolunteerByMember, listToDosFor, updateToDo, createServiceLog, listMyServiceLogs, serviceStats } from "@/lib/api";
@@ -20,6 +21,7 @@ import SkeletonTable from "@/components/ui/SkeletonTable";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 
 export default function VolunteerHub() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState(0);
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -42,7 +44,13 @@ export default function VolunteerHub() {
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6" sx={{ mb: 1 }}>Volunteer Hub</Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'start', sm: 'center' }} justifyContent="space-between" sx={{ mb: 1 }}>
+          <Typography variant="h6">Volunteer Hub</Typography>
+          <Stack direction="row" spacing={1}>
+            <Button size="small" onClick={()=> navigate('/membership')}>My Membership</Button>
+            <Button size="small" onClick={()=> navigate('/team/approvals')}>Team Approvals</Button>
+          </Stack>
+        </Stack>
         <Tabs value={tab} onChange={(_,x)=>setTab(x)} sx={{ mb: 2 }}>
           <Tab label="My Group" />
           <Tab label="My To-Dos" />
