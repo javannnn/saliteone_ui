@@ -113,6 +113,21 @@ export default function AppLayout({ children }: PropsWithChildren) {
   async function doLogout() { try { await logout(); } catch {} clear(); window.location.href = "/"; }
 
   const [cmdOpen, setCmdOpen] = useState(false);
+  const makeNavButton = (item: NavItem) => (
+    <ListItemButton
+      key={item.to}
+      selected={isActive(item.to)}
+      onClick={() => {
+        navigate(item.to);
+        if (!isMdUp) setNavOpen(false);
+      }}
+      sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}
+    >
+      <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
+      {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
+    </ListItemButton>
+  );
+
   const DrawerContent = (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Toolbar sx={{ px: 2 }}>
@@ -122,48 +137,23 @@ export default function AppLayout({ children }: PropsWithChildren) {
       <List sx={{ flex: 1 }} subheader={navOpen ? <ListSubheader disableSticky>General</ListSubheader> : undefined}>
         {NAV.filter(i => ["/","/membership","/requests","/notifications"].includes(i.to))
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
-          .map((item) => (
-            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
-            <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-            {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
-            </ListItemButton>
-        ))}
+          .map(makeNavButton)}
         {navOpen && <ListSubheader disableSticky>Volunteer</ListSubheader>}
         {NAV.filter(i => ["/volunteers"].includes(i.to))
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
-          .map((item) => (
-            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
-              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
-            </ListItemButton>
-        ))}
+          .map(makeNavButton)}
         {navOpen && <ListSubheader disableSticky>Volunteer Admin</ListSubheader>}
         {NAV.filter(i => ["/volunteers/admin","/volunteers/bulk-upload"].includes(i.to))
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
-          .map((item) => (
-            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
-              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
-            </ListItemButton>
-        ))}
+          .map(makeNavButton)}
         {navOpen && <ListSubheader disableSticky>Team Leader</ListSubheader>}
         {NAV.filter(i => ["/team/group","/team/approvals","/team/reports"].includes(i.to))
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
-          .map((item) => (
-            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
-              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
-            </ListItemButton>
-        ))}
+          .map(makeNavButton)}
         {navOpen && <ListSubheader disableSticky>Admin Tools</ListSubheader>}
         {NAV.filter(i => ["/approvals","/admin","/members","/newcomers","/sponsorships","/payments","/finance","/reports","/schools","/media/admin","/settings"].includes(i.to))
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
-          .map((item) => (
-            <ListItemButton key={item.to} component={Link} to={item.to} selected={isActive(item.to)} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
-              <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}>{item.icon}</ListItemIcon>
-              {navOpen && <ListItemText primary={tSafe(keyFromLabel(item.label), locale, item.label)} />}
-            </ListItemButton>
-        ))}
+          .map(makeNavButton)}
       </List>
       <Divider />
       <List>

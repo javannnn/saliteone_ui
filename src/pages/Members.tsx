@@ -234,7 +234,29 @@ export default function Members() {
     <MenuItem disabled={!menuAnchor.row?.email} onClick={()=>{ setTodo({ open: true, email: menuAnchor.row?.email, subject: "" }); setMenuAnchor({ el: null }); }}>
       <ListItemIcon><AssignmentIcon fontSize="small"/></ListItemIcon>Create ToDo
     </MenuItem>
-    <MenuItem onClick={async ()=>{ await ensureSystemUserForMember(menuAnchor.row!.name); setMenuAnchor({ el: null }); }}>
+    <MenuItem
+      onClick={async ()=>{
+        try {
+          const res = await ensureSystemUserForMember(menuAnchor.row!.name);
+          let message = `System user ready (${res.user})`;
+          if (res.temp_password) {
+            message += ` — temp password: ${res.temp_password}`;
+            try {
+              await navigator.clipboard.writeText(res.temp_password);
+              message += " (copied to clipboard)";
+            } catch {
+              // Clipboard may be unavailable in some environments; ignore silently.
+            }
+          }
+          toast.success(message);
+        } catch (err: any) {
+          console.error(err);
+          toast.error(err?.response?.data?.message || "Failed to promote member");
+        } finally {
+          setMenuAnchor({ el: null });
+        }
+      }}
+    >
       <ListItemIcon><BoltIcon fontSize="small"/></ListItemIcon>Promote to System User
     </MenuItem>
     <MenuItem onClick={async ()=>{ const email = menuAnchor.row?.email || menuAnchor.row?.name; await createProcess({ title: `Volunteer Request - ${email}` }); setMenuAnchor({ el: null }); }}>
@@ -295,7 +317,7 @@ function MemberDrawer({ state, onClose }: { state: { open: boolean; name?: strin
             </TextField>
             <Stack direction="row" spacing={1}>
               <Button variant="contained" startIcon={<SaveIcon/>} onClick={()=> saveMu.mutate()} disabled={!m.name}>Save</Button>
-              <Button variant="outlined" onClick={()=>window.location.href=`/members/${encodeURIComponent(m.name)}`}>Open full</Button>
+              <Button variant="outlined" onClick={()=>window.location.href=`/members?q=${encodeURIComponent(m.name)}`}>Open full</Button>
               {meQ.data?.name && meQ.data.name === m.name && (
                 <Button onClick={()=> window.location.href='/membership'}>My Profile</Button>
               )}

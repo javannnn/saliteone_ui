@@ -93,7 +93,6 @@ export default function Dashboard() {
   const qApprMembers = useQuery({ queryKey: ["dash-appr","members"], queryFn: () => listPendingMembers(5,0), enabled: isApprover });
   const qApprLogs = useQuery({ queryKey: ["dash-appr","logs"], queryFn: () => listSubmittedServiceLogs(5,0), enabled: isApprover });
   const qApprMedia = useQuery({ queryKey: ["dash-appr","media"], queryFn: () => listPendingMediaRequests(5,0), enabled: isApprover });
-  const muClose = useQueryClient().getMutationCache();
 
   const chartData = useMemo(() => {
     const arr = (qRecent.data || []) as RecentItem[];

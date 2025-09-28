@@ -51,7 +51,8 @@ api.interceptors.response.use(
       return Promise.reject(err);
     }
     // Only redirect on confirmed expired session (401 + whoami says Guest)
-    if (s === 401 && !skip) {
+    const method = (err?.config?.method || '').toLowerCase();
+    if (s === 401 && !skip && method !== 'get') {
       try {
         const me = await api.get("/method/salitemiret.api.auth.whoami", { [SKIP_REDIRECT_KEY]: true } as any);
         const msg = me?.data?.message ?? me?.data;
@@ -341,9 +342,19 @@ export async function createMember(data: { first_name: string; last_name: string
   return (r.data?.message ?? r.data) as { name: string };
 }
 
-export async function ensureSystemUserForMember(member: string, roles?: string[]) {
-  const r = await api.post("/method/salitemiret.api.auth.ensure_system_user_for_member", { member, roles } as any);
-  return (r.data?.message ?? r.data) as { user: string };
+export type EnsureSystemUserResponse = { user: string; temp_password?: string; created?: boolean };
+
+export async function ensureSystemUserForMember(member: string, roles?: string[]): Promise<EnsureSystemUserResponse> {
+  try {
+    const r = await api.post("/method/salitemiret.api.auth.ensure_system_user_for_member", { member, roles } as any);
+    return (r.data?.message ?? r.data) as EnsureSystemUserResponse;
+  } catch (e: any) {
+    if (e?.response?.status === 404) {
+      const r2 = await api.post("/method/salitemiret.api.admin.ensure_system_user_for_member", { member, roles } as any);
+      return (r2.data?.message ?? r2.data) as EnsureSystemUserResponse;
+    }
+    throw e;
+  }
 }
 
 // --------- Member self-service ---------

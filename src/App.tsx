@@ -58,10 +58,11 @@ function AuthedLayout({ children }: { children: JSX.Element }) {
           const perms = await bootstrapPermissions(doctypes);
           if (alive) setPerms(perms);
         } else {
-          clear();
+          // Do not immediately clear; allow user to re-auth without kicking
+          // clear();
         }
       } catch {
-        clear();
+        // Be tolerant to transient errors here; keep session intact
       } finally {
         if (alive) setReady(true);
       }
