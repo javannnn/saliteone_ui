@@ -284,19 +284,24 @@ export async function deleteVolunteer(name: string) {
 export type VolunteerGroup = { name: string; group_name: string; leader?: string; description?: string };
 export async function listVolunteerGroups() {
   const r = await api.get("/method/salitemiret.api.volunteer.list_groups", { __skipAuthRedirect: true } as any);
-  const rows = (r.data?.message ?? r.data) as Array<{ name: string; group_name: string }>;
-  return rows.map((x) => ({ name: x.name, group_name: x.group_name })) as any as VolunteerGroup[];
+  const rows = (r.data?.message ?? r.data) as VolunteerGroup[];
+  return rows.map((row) => ({
+    name: row.name,
+    group_name: row.group_name,
+    leader: row.leader,
+    description: row.description,
+  }));
 }
 export async function createVolunteerGroup(data: { group_name: string; leader?: string; description?: string }) {
-  const r = await api.post("/resource/Volunteer%20Group", data);
-  return r.data.data as VolunteerGroup;
+  const r = await api.post("/method/salitemiret.api.volunteer.create_group", data as any);
+  return (r.data?.message ?? r.data) as VolunteerGroup;
 }
 export async function updateVolunteerGroup(name: string, patch: Partial<VolunteerGroup>) {
-  const r = await api.put(`/resource/Volunteer%20Group/${encodeURIComponent(name)}`, patch);
-  return r.data.data as VolunteerGroup;
+  const r = await api.post("/method/salitemiret.api.volunteer.update_group", { name, patch } as any);
+  return (r.data?.message ?? r.data) as VolunteerGroup;
 }
 export async function deleteVolunteerGroup(name: string) {
-  await api.delete(`/resource/Volunteer%20Group/${encodeURIComponent(name)}`);
+  await api.post("/method/salitemiret.api.volunteer.delete_group", { name } as any);
 }
 
 // ---------- ToDo feed for current user ----------
@@ -481,6 +486,51 @@ export async function listSubmittedServiceLogs(limit=50, start=0) {
 export async function adminSetMemberStatus(name: string, status: string) {
   const r = await api.post("/method/salitemiret.api.approvals.admin_set_member_status", { name, status } as any);
   return r.data?.message ?? r.data;
+}
+
+// Reports
+export type PaymentsReportFilters = {
+  date_from?: string;
+  date_to?: string;
+  status?: string;
+  method?: string;
+  payment_type?: string;
+  member?: string;
+  limit?: number;
+};
+
+export type PaymentsReportBreakdown = { label: string; count: number; total_amount: number };
+export type PaymentsTrendRow = { period: string; total_amount: number; paid_amount: number };
+export type PaymentsReportRow = {
+  name: string;
+  member: string;
+  amount: number;
+  method: string;
+  payment_type: string;
+  status: string;
+  posting_date: string;
+};
+
+export type PaymentsReportResponse = {
+  summary: { count: number; total_amount: number; paid_amount: number; pending_amount: number; failed_amount: number };
+  by_status: PaymentsReportBreakdown[];
+  by_method: PaymentsReportBreakdown[];
+  by_type: PaymentsReportBreakdown[];
+  trend: PaymentsTrendRow[];
+  rows: PaymentsReportRow[];
+};
+
+export async function getPaymentsReport(filters: PaymentsReportFilters = {}): Promise<PaymentsReportResponse> {
+  const params: Record<string, string | number> = {};
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    params[key] = value as any;
+  });
+  const r = await api.get("/method/salitemiret.api.reports.payments_report", {
+    params,
+    [SKIP_REDIRECT_KEY]: true,
+  } as any);
+  return (r.data?.message ?? r.data) as PaymentsReportResponse;
 }
 
 // Public: request volunteer onboarding
