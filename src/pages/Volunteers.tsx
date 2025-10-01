@@ -13,6 +13,7 @@ import MenuItem from "@mui/material/MenuItem";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddTaskIcon from "@mui/icons-material/AddTask";
+import EditIcon from "@mui/icons-material/Edit";
 import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -30,6 +31,11 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 
 import { useAuth } from "@/stores/auth";
 import {
@@ -41,21 +47,201 @@ import {
   deleteVolunteer,
   listToDosFor,
   createToDo,
+  createVolunteerGroup,
+  updateVolunteerGroup,
+  deleteVolunteerGroup,
+  VolunteerGroup,
+  ensureSystemUserForMember,
+  ensureMemberForEmail,
+  promoteVolunteerToMember,
 } from "@/lib/api";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
+
+type GroupForm = { group_name: string; leader?: string; description?: string };
+
+function GroupManager({
+  groups,
+  onCreate,
+  onUpdate,
+  onDelete,
+  busy,
+}: {
+  groups: VolunteerGroup[];
+  onCreate: (payload: GroupForm) => Promise<void>;
+  onUpdate: (payload: { name: string } & GroupForm) => Promise<void>;
+  onDelete: (name: string) => Promise<void>;
+  busy?: boolean;
+}) {
+  const [form, setForm] = useState<GroupForm>({ group_name: "", leader: "", description: "" });
+  const [edit, setEdit] = useState<{ open: boolean; name?: string; group_name: string; leader?: string; description?: string }>({ open: false, group_name: "" });
+
+  const resetForm = () => setForm({ group_name: "", leader: "", description: "" });
+
+  const handleCreate = async () => {
+    if (!form.group_name.trim()) {
+      toast.error("Group name is required");
+      return;
+    }
+    await onCreate({
+      group_name: form.group_name.trim(),
+      leader: form.leader?.trim() || undefined,
+      description: form.description?.trim() || undefined,
+    });
+    resetForm();
+  };
+
+  const handleEditOpen = (group: VolunteerGroup) => {
+    setEdit({
+      open: true,
+      name: group.name,
+      group_name: group.group_name || group.name,
+      leader: group.leader || "",
+      description: group.description || "",
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!edit?.name) return;
+    if (!edit.group_name.trim()) {
+      toast.error("Group name is required");
+      return;
+    }
+    await onUpdate({
+      name: edit.name,
+      group_name: edit.group_name.trim(),
+      leader: edit.leader?.trim() || undefined,
+      description: edit.description?.trim() || undefined,
+    });
+    setEdit({ open: false, group_name: "" });
+  };
+
+  const handleDelete = async (name: string) => {
+    if (!window.confirm("Delete this group? Volunteers assigned to it must be reassigned first.")) return;
+    await onDelete(name);
+  };
+
+  return (
+    <Card variant="outlined" sx={{ mb: 3 }}>
+      <CardHeader title="Volunteer Groups" subheader="Create and manage groups before assigning volunteers." />
+      <CardContent>
+        <Stack spacing={2}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+            <TextField
+              label="Group name"
+              value={form.group_name}
+              onChange={(e) => setForm((prev) => ({ ...prev, group_name: e.target.value }))}
+              sx={{ minWidth: 200 }}
+              required
+            />
+            <TextField
+              label="Leader (Member name or email)"
+              value={form.leader || ""}
+              onChange={(e) => setForm((prev) => ({ ...prev, leader: e.target.value }))}
+              sx={{ minWidth: 240 }}
+            />
+            <TextField
+              label="Description"
+              value={form.description || ""}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              sx={{ flex: 1, minWidth: 260 }}
+            />
+            <Button variant="contained" onClick={handleCreate} disabled={busy}>Add Group</Button>
+          </Stack>
+
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Group</TableCell>
+                <TableCell>Leader</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell width={120}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {groups.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <Typography color="text.secondary">No groups yet. Create one to start assigning volunteers.</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                groups.map((group) => (
+                  <TableRow key={group.name} hover>
+                    <TableCell>{group.group_name || group.name}</TableCell>
+                    <TableCell>{group.leader || "-"}</TableCell>
+                    <TableCell>{group.description || ""}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton size="small" onClick={() => handleEditOpen(group)} aria-label="edit">
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error" onClick={() => handleDelete(group.name)} aria-label="delete">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Stack>
+      </CardContent>
+
+      <Dialog open={edit.open} onClose={() => setEdit({ open: false, group_name: "" })} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Group</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={2}>
+            <TextField
+              label="Group name"
+              value={edit.group_name || ""}
+              onChange={(e) => setEdit((prev) => ({ ...prev, group_name: e.target.value }))}
+              required
+            />
+            <TextField
+              label="Leader (Member name or email)"
+              value={edit.leader || ""}
+              onChange={(e) => setEdit((prev) => ({ ...prev, leader: e.target.value }))}
+            />
+            <TextField
+              label="Description"
+              value={edit.description || ""}
+              onChange={(e) => setEdit((prev) => ({ ...prev, description: e.target.value }))}
+              multiline
+              minRows={2}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEdit({ open: false, group_name: "" })}>Cancel</Button>
+          <Button onClick={handleEditSave} disabled={busy} variant="contained">Save</Button>
+        </DialogActions>
+      </Dialog>
+    </Card>
+  );
+}
 
 function AdminTable({
   groups,
+  groupLabels,
   volunteers,
   onUpdate,
   onDelete,
   onAssignTask,
+  onPromote,
+  onEnsureMember,
+  promoteBusy = false,
 }: {
   groups: Array<{ name: string; group_name?: string }>;
+  groupLabels: Record<string, string>;
   volunteers: Array<{ name: string; member: string; group?: string; services?: string; email?: string }>;
   onUpdate: (row: any) => void;
   onDelete: (name: string) => void;
   onAssignTask: (email: string) => void;
+  onPromote: (member: string) => void;
+  onEnsureMember?: (row: any) => void;
+  promoteBusy?: boolean;
 }) {
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement|null; row?: any }>({ el: null });
   return (
@@ -84,9 +270,20 @@ function AdminTable({
                     value={v.group || ""}
                     onChange={(e) => onUpdate({ ...v, group: e.target.value })}
                     fullWidth
+                    SelectProps={{
+                      displayEmpty: true,
+                      renderValue: (value) => {
+                        const val = value as string;
+                        if (!val) return "Unassigned";
+                        return groupLabels[val] || val;
+                      },
+                    }}
                   >
+                    <MenuItem value="">
+                      <em>Unassigned</em>
+                    </MenuItem>
                     {groups.map((g) => (
-                      <MenuItem key={g.name} value={g.group_name || g.name}>
+                      <MenuItem key={g.name} value={g.name}>
                         {g.group_name || g.name}
                       </MenuItem>
                     ))}
@@ -131,6 +328,24 @@ function AdminTable({
           <MenuItem disabled={!menuAnchor.row?.email} onClick={()=>{ onAssignTask(menuAnchor.row?.email); setMenuAnchor({ el: null }); }}>
             <ListItemIcon><AssignmentIcon fontSize="small"/></ListItemIcon>Create ToDo
           </MenuItem>
+          <MenuItem
+            disabled={!!menuAnchor.row?.member || !onEnsureMember}
+            onClick={()=>{
+              if (onEnsureMember && menuAnchor.row) onEnsureMember(menuAnchor.row);
+              setMenuAnchor({ el: null });
+            }}
+          >
+            <ListItemIcon><PersonAddIcon fontSize="small"/></ListItemIcon>Create Member
+          </MenuItem>
+          <MenuItem
+            disabled={!menuAnchor.row?.member || promoteBusy}
+            onClick={()=>{
+              if (menuAnchor.row?.member) onPromote(menuAnchor.row.member);
+              setMenuAnchor({ el: null });
+            }}
+          >
+            <ListItemIcon><AddTaskIcon fontSize="small" /></ListItemIcon>Promote to System User
+          </MenuItem>
         </Menu>
       </CardContent>
     </Card>
@@ -139,12 +354,14 @@ function AdminTable({
 
 function VolunteerSelfService({
   groups,
+  groupLabels,
   myVolunteer,
   myEmail,
   onSave,
   todos,
 }: {
   groups: Array<{ name: string; group_name?: string }>;
+  groupLabels: Record<string, string>;
   myVolunteer: { name?: string; group?: string; services?: string } | null;
   myEmail: string;
   onSave: (payload: { name?: string; group?: string; services?: string }) => void;
@@ -167,9 +384,20 @@ function VolunteerSelfService({
               value={group}
               onChange={(e) => setGroup(e.target.value)}
               sx={{ minWidth: 240 }}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (value) => {
+                  const val = value as string;
+                  if (!val) return "Select group";
+                  return groupLabels[val] || val;
+                },
+              }}
             >
+              <MenuItem value="">
+                <em>Unassigned</em>
+              </MenuItem>
               {groups.map((g) => (
-                <MenuItem key={g.name} value={g.group_name || g.name}>
+                <MenuItem key={g.name} value={g.name}>
                   {g.group_name || g.name}
                 </MenuItem>
               ))}
@@ -258,14 +486,91 @@ export default function Volunteers() {
 
   const approveReq = useMutation({
     mutationFn: async (process: string) => (await api.post("/method/salitemiret.api.volunteer.approve_volunteer_request", { process, create_user: 0 })).data.message,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["vol-requests"] }); qc.invalidateQueries({ queryKey: ["volunteers"] }); }
+    onSuccess: () => {
+      toast.success("Volunteer request approved");
+      qc.invalidateQueries({ queryKey: ["vol-requests"] });
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to approve request");
+    },
   });
   const promoteMember = useMutation({
-    mutationFn: async (member: string) => (await api.post("/method/salitemiret.api.auth.ensure_system_user_for_member", { member })).data.message,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vol-requests"] })
+    mutationFn: (member: string) => ensureSystemUserForMember(member),
+    onSuccess: (res) => {
+      let message = `System user ready (${res.user})`;
+      if (res.temp_password) {
+        message += ` — temp password: ${res.temp_password}`;
+        try {
+          navigator.clipboard.writeText(res.temp_password);
+          message += " (copied)";
+        } catch (error) {
+          console.warn("Clipboard write failed", error);
+        }
+      }
+      toast.success(message);
+      qc.invalidateQueries({ queryKey: ["vol-requests"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to promote member");
+    },
   });
+
   const genTempPwd = useMutation({
     mutationFn: async (member: string) => (await api.post("/method/salitemiret.api.volunteer.generate_member_temp_password", { member })).data.message,
+    onSuccess: (res: any) => {
+      if (res?.user && res?.password) {
+        let message = `Temp credentials for ${res.user}: ${res.password}`;
+        try {
+          navigator.clipboard.writeText(res.password);
+          message += " (copied)";
+        } catch (error) {
+          console.warn("Clipboard write failed", error);
+        }
+        toast.success(message);
+      } else {
+        toast.success("Temporary password generated");
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to generate password");
+    },
+  });
+
+  const ensureMember = useMutation({
+    mutationFn: (email: string) => ensureMemberForEmail(email),
+    onSuccess: (res) => {
+      toast.success(`Member ready: ${res.member}`);
+      qc.invalidateQueries({ queryKey: ["vol-requests"] });
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to create member");
+    },
+  });
+
+  const promoteVolunteerMember = useMutation({
+    mutationFn: ({ name, email }: { name: string; email?: string }) => promoteVolunteerToMember(name, email),
+    onSuccess: (res) => {
+      toast.success(res.created ? `Member created and linked: ${res.member}` : `Volunteer linked to member ${res.member}`);
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to create member from volunteer");
+    },
+  });
+
+  const createGroup = useMutation({
+    mutationFn: createVolunteerGroup,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["vol-groups"] }),
+  });
+  const updateGroup = useMutation({
+    mutationFn: ({ name, patch }: { name: string; patch: GroupForm }) => updateVolunteerGroup(name, patch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["vol-groups"] }),
+  });
+  const deleteGroup = useMutation({
+    mutationFn: (name: string) => deleteVolunteerGroup(name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["vol-groups"] }),
   });
 
   const myVolQ = useQuery({
@@ -282,26 +587,47 @@ export default function Volunteers() {
 
   const createVol = useMutation({
     mutationFn: createVolunteer,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-vol"] }),
+    onSuccess: () => {
+      toast.success("Volunteer profile created");
+      qc.invalidateQueries({ queryKey: ["my-vol"] });
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to save volunteer"),
   });
   const updateVol = useMutation({
     mutationFn: ({ name, ...patch }: any) => updateVolunteer(name, patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-vol"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-vol"] });
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+      toast.success("Volunteer updated");
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to update volunteer"),
   });
   const deleteVol = useMutation({
     mutationFn: (name: string) => deleteVolunteer(name),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["volunteers"] });
       qc.invalidateQueries({ queryKey: ["my-vol"] });
+      toast.success("Volunteer deleted");
     },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to delete volunteer"),
   });
   const assignTask = useMutation({
     mutationFn: (email: string) => createToDo({ description: "General help", allocated_to: email }),
+    onSuccess: () => toast.success("Task created"),
+    onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to create task"),
   });
 
   // No render-time mode switching; self-service handles create vs update
 
   const groups = groupsQ.data || [];
+  const groupLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    groups.forEach((g) => {
+      map[g.name] = g.group_name || g.name;
+    });
+    return map;
+  }, [groups]);
   const volunteers = (volunteersQ.data || []).map((v: any) => ({
     ...v,
     email: v.email || v.member_email,
@@ -310,13 +636,70 @@ export default function Volunteers() {
   const myVolunteer = myVolQ.data || null;
 
   const handleSaveSelf = (payload: { name?: string; group?: string; services?: string }) => {
-    if (payload.name) updateVol.mutate(payload as any);
-    else createVol.mutate(payload as any);
+    const cleaned = {
+      ...payload,
+      group: payload.group ? payload.group : null,
+    };
+    if (payload.name) updateVol.mutate(cleaned as any);
+    else createVol.mutate(cleaned as any);
   };
 
-  const handleAdminUpdate = (row: any) => updateVol.mutate(row);
+  const handleAdminUpdate = (row: any) => {
+    updateVol.mutate({ ...row, group: row.group ? row.group : null });
+  };
   const handleAdminDelete = (name: string) => deleteVol.mutate(name);
   const handleAssign = (email: string) => assignTask.mutate(email);
+  const handlePromoteVolunteer = (member: string) => promoteMember.mutate(member);
+  const handleEnsureVolunteerMember = (row: any) => {
+    let email = (row?.email || "").trim();
+    if (!email) {
+      const input = window.prompt("Enter email for new member", "");
+      if (!input) {
+        toast.error("Volunteer requires an email to create a Member");
+        return;
+      }
+      email = input.trim();
+    }
+    promoteVolunteerMember.mutate({ name: row.name, email });
+  };
+
+  const handleCreateGroup = async (payload: GroupForm) => {
+    try {
+      await createGroup.mutateAsync(payload);
+      toast.success("Group saved");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to save group");
+      throw err;
+    }
+  };
+
+  const handleUpdateGroup = async (payload: { name: string } & GroupForm) => {
+    try {
+      const { name, group_name, leader, description } = payload;
+      await updateGroup.mutateAsync({
+        name,
+        patch: {
+          group_name,
+          leader,
+          description,
+        },
+      });
+      toast.success("Group updated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to update group");
+      throw err;
+    }
+  };
+
+  const handleDeleteGroup = async (name: string) => {
+    try {
+      await deleteGroup.mutateAsync(name);
+      toast.success("Group deleted");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to delete group");
+      throw err;
+    }
+  };
 
   const [tab, setTab] = useState(0);
   return (
@@ -331,6 +714,13 @@ export default function Volunteers() {
 
       {isVolunteerAdmin ? (
         <>
+          <GroupManager
+            groups={groups}
+            onCreate={handleCreateGroup}
+            onUpdate={handleUpdateGroup}
+            onDelete={handleDeleteGroup}
+            busy={createGroup.isPending || updateGroup.isPending || deleteGroup.isPending}
+          />
           <Tabs value={tab} onChange={(_,x)=>setTab(x)} sx={{ mb: 1 }}>
             <Tab label="Volunteers" />
             <Tab label="Requests" />
@@ -338,10 +728,14 @@ export default function Volunteers() {
           {tab===0 && (
             <AdminTable
               groups={groups}
+              groupLabels={groupLabels}
               volunteers={volunteers}
               onUpdate={handleAdminUpdate}
               onDelete={handleAdminDelete}
               onAssignTask={handleAssign}
+              onPromote={handlePromoteVolunteer}
+              onEnsureMember={handleEnsureVolunteerMember}
+              promoteBusy={promoteMember.isPending}
             />
           )}
           {tab===1 && (
@@ -359,23 +753,27 @@ export default function Volunteers() {
                         <TableCell>{r.member || "-"}</TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1}>
-                            <Button size="small" variant="contained" onClick={async ()=>{
-                              await approveReq.mutateAsync(r.name);
-                            }}>Approve</Button>
-                            {r.member && <Button size="small" variant="outlined" onClick={async ()=>{
-                              try {
-                                const res = await genTempPwd.mutateAsync(r.member);
-                                if (res?.user && res?.password) {
-                                  alert(`Temp credentials for ${res.user}: ${res.password}`);
-                                }
-                              } catch (e:any) {
-                                alert(e?.response?.data?.message || e?.message || "Failed to generate");
-                              }
-                            }}>Generate Password</Button>}
-                            {r.member && <Button size="small" onClick={async ()=>{
-                              await promoteMember.mutateAsync(r.member);
-                              alert("Promoted to System User");
-                            }}>Promote to System User</Button>}
+                            <Button size="small" variant="contained" onClick={()=> approveReq.mutate(r.name)} disabled={approveReq.isPending}>Approve</Button>
+                            {!r.member && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={()=> ensureMember.mutate(r.email)}
+                                disabled={!r.email || ensureMember.isPending}
+                              >
+                                Create Member
+                              </Button>
+                            )}
+                            {r.member && (
+                              <>
+                                <Button size="small" variant="outlined" onClick={()=> genTempPwd.mutate(r.member)} disabled={genTempPwd.isPending}>
+                                  Generate Password
+                                </Button>
+                                <Button size="small" onClick={()=> promoteMember.mutate(r.member)} disabled={promoteMember.isPending}>
+                                  Promote to System User
+                                </Button>
+                              </>
+                            )}
                           </Stack>
                         </TableCell>
                       </TableRow>
@@ -389,6 +787,7 @@ export default function Volunteers() {
       ) : (
         <VolunteerSelfService
           groups={groups}
+          groupLabels={groupLabels}
           myVolunteer={myVolunteer}
           myEmail={user!.name}
           onSave={handleSaveSelf}
