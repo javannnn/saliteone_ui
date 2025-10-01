@@ -18,6 +18,10 @@ import PaymentsIcon from "@mui/icons-material/Payments";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import BoltIcon from "@mui/icons-material/Bolt";
 import Drawer from "@mui/material/Drawer";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 import Divider from "@mui/material/Divider";
 import SkeletonTable from "@/components/ui/SkeletonTable";
 import EmptyState from "@/components/ui/EmptyState";
@@ -46,7 +50,7 @@ export default function Members() {
   const [preset, setPreset] = useState<string>("");
   const [creating, setCreating] = useState<{ first_name: string; last_name: string; email: string; phone: string }>({ first_name: "", last_name: "", email: "", phone: "" });
   const [openCreate, setOpenCreate] = useState(false);
-  const [openDrawer, setOpenDrawer] = useState<{ open: boolean; name?: string }>({ open: false });
+  const [memberDialog, setMemberDialog] = useState<{ open: boolean; name?: string }>({ open: false });
 
   const [page, setPage] = useState(0);
   const pageSize = 50;
@@ -189,7 +193,7 @@ export default function Members() {
                       <TableCell>{m.email || "-"}</TableCell>
                       <TableCell align="right">
                         <IconButton size="small" onClick={(e)=> setMenuAnchor({ el: e.currentTarget, row: m })} aria-label="more"><MoreVertIcon fontSize="small"/></IconButton>
-                        <IconButton size="small" onClick={()=>setOpenDrawer({ open: true, name: m.name })} title="Open"><OpenInNewIcon fontSize="small"/></IconButton>
+                        <IconButton size="small" onClick={()=>setMemberDialog({ open: true, name: m.name })} title="Open"><OpenInNewIcon fontSize="small"/></IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -221,11 +225,11 @@ export default function Members() {
         </Box>
   </Drawer>
 
-  {/* Detail drawer */}
-  <MemberDrawer state={openDrawer} onClose={()=>setOpenDrawer({ open:false })} />
+  {/* Detail dialog */}
+  <MemberDialog state={memberDialog} onClose={()=>setMemberDialog({ open:false })} />
   {/* Row actions menu */}
   <Menu open={!!menuAnchor.el} anchorEl={menuAnchor.el} onClose={()=> setMenuAnchor({ el: null })}>
-    <MenuItem onClick={()=>{ setOpenDrawer({ open: true, name: menuAnchor.row!.name }); setMenuAnchor({ el: null }); }}>
+    <MenuItem onClick={()=>{ setMemberDialog({ open: true, name: menuAnchor.row!.name }); setMenuAnchor({ el: null }); }}>
       <ListItemIcon><OpenInNewIcon fontSize="small"/></ListItemIcon>Open
     </MenuItem>
     <MenuItem onClick={()=>{ navigate(`/payments?q=${encodeURIComponent(menuAnchor.row!.name)}`); setMenuAnchor({ el: null }); }}>
@@ -285,28 +289,46 @@ export default function Members() {
 import Box from "@mui/material/Box";
 // removed duplicate React import
 
-function MemberDrawer({ state, onClose }: { state: { open: boolean; name?: string }; onClose: ()=>void }) {
+function MemberDialog({ state, onClose }: { state: { open: boolean; name?: string }; onClose: ()=>void }) {
+  const navigate = useNavigate();
   const meQ = useQuery({ queryKey: ["me-member-inline"], queryFn: getMyMember });
   const q = useQuery({
-    queryKey: ["member-drawer", state.name],
+    queryKey: ["member-dialog", state.name],
     queryFn: () => getDoc<any>("Member", state.name!, ["name","first_name","last_name","email","phone","status"]),
     enabled: !!state.open && !!state.name,
   });
   const m = q.data || {};
   const qc = useQueryClient();
   const [patch, setPatch] = useState<{ phone?: string; status?: string }>({});
-  useEffect(()=>{ setPatch({ phone: m.phone || '', status: m.status || '' }); }, [m.name]);
+  useEffect(()=>{ if (m.name) setPatch({ phone: m.phone || '', status: m.status || '' }); }, [m.name]);
   const saveMu = useMutation({
     mutationFn: () => updateDoc("Member", m.name, patch as any),
-    onSuccess: ()=>{ toast.success('Member updated'); qc.invalidateQueries({ queryKey: ["members"] }); q.refetch(); },
+    onSuccess: ()=>{
+      toast.success('Member updated');
+      qc.invalidateQueries({ queryKey: ["members"] });
+      q.refetch();
+    },
     onError: ()=> toast.error('Failed to update member')
   });
+
+  const handleOpenFull = () => {
+    if (!m.name) return;
+    navigate(`/members/${encodeURIComponent(m.name)}`);
+    onClose();
+  };
+
+  const handleMyProfile = () => {
+    onClose();
+    navigate('/membership');
+  };
+
   return (
-    <Drawer anchor="right" open={state.open} onClose={onClose}>
-      <Box sx={{ width: 380, p: 2 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>Member</Typography>
-        <Divider sx={{ mb: 2 }} />
-        {!q.data ? <SkeletonTable rows={5}/> : (
+    <Dialog open={state.open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Member</DialogTitle>
+      <DialogContent dividers>
+        {!q.data ? (
+          <SkeletonTable rows={5}/>
+        ) : (
           <Stack spacing={1}>
             <Typography variant="body2">ID: {m.name}</Typography>
             <Typography variant="body2">Name: {m.first_name} {m.last_name}</Typography>
@@ -315,17 +337,25 @@ function MemberDrawer({ state, onClose }: { state: { open: boolean; name?: strin
             <TextField label="Status" size="small" select value={patch.status || ''} onChange={(e)=> setPatch({ ...patch, status: String(e.target.value) })}>
               {['Active','Pending','Inactive'].map(s=> (<MenuItem key={s} value={s}>{s}</MenuItem>))}
             </TextField>
-            <Stack direction="row" spacing={1}>
-              <Button variant="contained" startIcon={<SaveIcon/>} onClick={()=> saveMu.mutate()} disabled={!m.name}>Save</Button>
-              <Button variant="outlined" onClick={()=>window.location.href=`/members?q=${encodeURIComponent(m.name)}`}>Open full</Button>
-              {meQ.data?.name && meQ.data.name === m.name && (
-                <Button onClick={()=> window.location.href='/membership'}>My Profile</Button>
-              )}
-            </Stack>
           </Stack>
         )}
-      </Box>
-    </Drawer>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Close</Button>
+        {meQ.data?.name && meQ.data.name === m.name && (
+          <Button onClick={handleMyProfile}>My Profile</Button>
+        )}
+        <Button onClick={handleOpenFull} disabled={!m.name}>Open Full</Button>
+        <Button
+          variant="contained"
+          startIcon={<SaveIcon/>}
+          onClick={()=> saveMu.mutate()}
+          disabled={!m.name || saveMu.isPending}
+        >
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

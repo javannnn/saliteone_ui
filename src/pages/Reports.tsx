@@ -27,7 +27,7 @@ import { getPaymentsReport, PaymentsReportFilters, PaymentsReportResponse } from
 
 const STATUS_OPTIONS = ["", "Paid", "Pending", "Failed"];
 const METHOD_OPTIONS = ["", "Cash", "Debit", "Credit", "E-Transfer", "Other"];
-const TYPE_OPTIONS = ["", "Tithe", "Donation", "Sponsorship", "Service Fee", "Other"];
+const TYPE_OPTIONS = ["", "Tithe", "Donation", "Sponsorship", "Service Fee", "Sunday School Fee", "Other"];
 
 const numberFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -259,4 +259,3 @@ export default function Reports() {
     </Stack>
   );
 }
-

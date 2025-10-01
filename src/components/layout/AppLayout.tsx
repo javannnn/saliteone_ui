@@ -15,6 +15,10 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import Avatar from "@mui/material/Avatar";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import Tooltip from "@mui/material/Tooltip";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import SchemaIcon from "@mui/icons-material/Schema";
@@ -25,6 +29,7 @@ import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import SchoolIcon from "@mui/icons-material/School";
+import ChildCareIcon from "@mui/icons-material/ChildCare";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
@@ -37,6 +42,8 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import LogoutIcon from "@mui/icons-material/Logout";
 import TranslateIcon from "@mui/icons-material/Translate";
+import PersonIcon from "@mui/icons-material/Person";
+import LockIcon from "@mui/icons-material/Lock";
 import { ThemeToggleButton } from "@/theme";
 import { useAuth } from "@/stores/auth";
 import { useUI } from "@/stores/ui";
@@ -88,6 +95,7 @@ const NAV: ReadonlyArray<NavItem> = [
   { to: "/reports", label: "Reports", icon: <BarChartIcon />, rolesAllowed: ["Admin","Finance Admin"] },
   { to: "/admin", label: "Admin Dashboard", icon: <BarChartIcon />, rolesAllowed: ["Admin"] },
   { to: "/schools", label: "Schools", icon: <SchoolIcon />, rolesAllowed: ["Admin"] },
+  { to: "/sunday-school", label: "Sunday School", icon: <ChildCareIcon />, rolesAllowed: ["Admin","Media Admin","Finance Admin","Volunteer Admin"], permKey: "Sunday School Member" },
   { to: "/media/admin", label: "Media Admin", icon: <PhotoLibraryIcon />, rolesAllowed: ["Media Admin","Admin"] },
   { to: "/settings", label: "System Settings", icon: <SettingsIcon />, rolesAllowed: ["Admin","Super Admin"] },
 ];
@@ -111,6 +119,16 @@ export default function AppLayout({ children }: PropsWithChildren) {
   const width = useMemo(() => (isMdUp ? (navOpen ? DRAWER_W : RAIL_W) : 0), [isMdUp, navOpen]);
 
   async function doLogout() { try { await logout(); } catch {} clear(); window.location.href = "/"; }
+
+  const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
+  const profileOpen = Boolean(profileAnchor);
+
+  const initials = useMemo(() => {
+    if (!user?.full_name) return user?.name?.[0]?.toUpperCase() || "U";
+    const parts = user.full_name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0][0]?.toUpperCase() || "U";
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }, [user?.full_name, user?.name]);
 
   const [cmdOpen, setCmdOpen] = useState(false);
   const makeNavButton = (item: NavItem) => (
@@ -151,16 +169,9 @@ export default function AppLayout({ children }: PropsWithChildren) {
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
           .map(makeNavButton)}
         {navOpen && <ListSubheader disableSticky>Admin Tools</ListSubheader>}
-        {NAV.filter(i => ["/approvals","/admin","/members","/newcomers","/sponsorships","/payments","/finance","/reports","/schools","/media/admin","/settings"].includes(i.to))
+        {NAV.filter(i => ["/approvals","/admin","/members","/newcomers","/sponsorships","/payments","/finance","/reports","/schools","/sunday-school","/media/admin","/settings"].includes(i.to))
           .filter((item)=>{ const permOk=!item.permKey||perms[item.permKey]; const roleOk=!item.rolesAllowed||item.rolesAllowed.some(r=>(roles||[]).includes(r)); return permOk&&roleOk; })
           .map(makeNavButton)}
-      </List>
-      <Divider />
-      <List>
-        <ListItemButton onClick={doLogout} sx={{ px: navOpen ? 2 : 1.2, justifyContent: navOpen ? "initial" : "center" }}>
-          <ListItemIcon sx={{ minWidth: 0, mr: navOpen ? 2 : "auto" }}><LogoutIcon /></ListItemIcon>
-          {navOpen && <ListItemText primary="Sign out" />}
-        </ListItemButton>
       </List>
     </Box>
   );
@@ -235,6 +246,61 @@ export default function AppLayout({ children }: PropsWithChildren) {
           </Popover>
           {roles?.[0] && <Chip size="small" label={roles[0]} sx={{ mx: 1 }} />}
           <ThemeToggleButton />
+          {user && (
+            <>
+              <Tooltip title={user.full_name} arrow>
+                <IconButton
+                  onClick={(event) => setProfileAnchor(event.currentTarget)}
+                  size="small"
+                  sx={{
+                    ml: 1,
+                    transition: "transform .2s ease",
+                    '&:hover': { transform: 'scale(1.05)' },
+                    '& .MuiAvatar-root': {
+                      background: 'linear-gradient(135deg,#2563eb,#9333ea)',
+                      color: '#fff',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      boxShadow: '0 8px 20px rgba(79,70,229,.28)',
+                    },
+                  }}
+                >
+                  <Avatar sx={{ width: 34, height: 34 }}>{initials}</Avatar>
+                </IconButton>
+              </Tooltip>
+              <Menu
+                anchorEl={profileAnchor}
+                open={profileOpen}
+                onClose={() => setProfileAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                keepMounted
+              >
+                <MenuItem disabled>
+                  <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                  {user.full_name || user.name}
+                </MenuItem>
+                <Divider sx={{ my: 1 }} />
+                <MenuItem onClick={() => { setProfileAnchor(null); navigate('/membership'); }}>
+                  <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                  My Profile
+                </MenuItem>
+                <MenuItem onClick={() => { setProfileAnchor(null); navigate('/settings'); }}>
+                  <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+                  Account Settings
+                </MenuItem>
+                <MenuItem onClick={() => { setProfileAnchor(null); window.location.href = '/update-password'; }}>
+                  <ListItemIcon><LockIcon fontSize="small" /></ListItemIcon>
+                  Change Password
+                </MenuItem>
+                <Divider sx={{ my: 1 }} />
+                <MenuItem onClick={() => { setProfileAnchor(null); doLogout(); }}>
+                  <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
+                  Sign out
+                </MenuItem>
+              </Menu>
+            </>
+          )}
         </Toolbar>
       </AppBar>
 

@@ -30,6 +30,7 @@ import Reports from "@/pages/Reports";
 import AdminDashboard from "@/pages/AdminDashboard";
 import Notifications from "@/pages/Notifications";
 import Approvals from "@/pages/Approvals";
+import SundaySchool from "@/pages/SundaySchool";
 import RegisterVolunteer from "@/pages/RegisterVolunteer";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
@@ -53,7 +54,7 @@ function AuthedLayout({ children }: { children: JSX.Element }) {
         if (m.user && m.user !== "Guest") {
           setSession({ name: m.user, full_name: m.full_name }, m.roles || []);
           const doctypes = [
-            "Member","Payment","Sponsorship","Newcomer","Volunteer","Media Request","School Enrollment","Workflow Process"
+            "Member","Payment","Sponsorship","Newcomer","Volunteer","Media Request","School Enrollment","Sunday School Member","Workflow Process"
           ];
           const perms = await bootstrapPermissions(doctypes);
           if (alive) setPerms(perms);
@@ -108,6 +109,7 @@ const router = createBrowserRouter([
   { path: "/approvals", element: <AuthedLayout><Approvals /></AuthedLayout> },
   { path: "/media", element: <AuthedLayout><Media /></AuthedLayout> },
   { path: "/schools", element: <AuthedLayout><Schools /></AuthedLayout> },
+  { path: "/sunday-school", element: <AuthedLayout><SundaySchool /></AuthedLayout> },
   { path: "/register/volunteer", element: <RegisterVolunteer /> },
   { path: "*", element: <NotFound /> }
 ]);

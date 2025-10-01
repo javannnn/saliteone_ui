@@ -35,6 +35,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 
 import { useAuth } from "@/stores/auth";
 import {
@@ -50,6 +51,9 @@ import {
   updateVolunteerGroup,
   deleteVolunteerGroup,
   VolunteerGroup,
+  ensureSystemUserForMember,
+  ensureMemberForEmail,
+  promoteVolunteerToMember,
 } from "@/lib/api";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -225,6 +229,9 @@ function AdminTable({
   onUpdate,
   onDelete,
   onAssignTask,
+  onPromote,
+  onEnsureMember,
+  promoteBusy = false,
 }: {
   groups: Array<{ name: string; group_name?: string }>;
   groupLabels: Record<string, string>;
@@ -232,6 +239,9 @@ function AdminTable({
   onUpdate: (row: any) => void;
   onDelete: (name: string) => void;
   onAssignTask: (email: string) => void;
+  onPromote: (member: string) => void;
+  onEnsureMember?: (row: any) => void;
+  promoteBusy?: boolean;
 }) {
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement|null; row?: any }>({ el: null });
   return (
@@ -317,6 +327,24 @@ function AdminTable({
           </MenuItem>
           <MenuItem disabled={!menuAnchor.row?.email} onClick={()=>{ onAssignTask(menuAnchor.row?.email); setMenuAnchor({ el: null }); }}>
             <ListItemIcon><AssignmentIcon fontSize="small"/></ListItemIcon>Create ToDo
+          </MenuItem>
+          <MenuItem
+            disabled={!!menuAnchor.row?.member || !onEnsureMember}
+            onClick={()=>{
+              if (onEnsureMember && menuAnchor.row) onEnsureMember(menuAnchor.row);
+              setMenuAnchor({ el: null });
+            }}
+          >
+            <ListItemIcon><PersonAddIcon fontSize="small"/></ListItemIcon>Create Member
+          </MenuItem>
+          <MenuItem
+            disabled={!menuAnchor.row?.member || promoteBusy}
+            onClick={()=>{
+              if (menuAnchor.row?.member) onPromote(menuAnchor.row.member);
+              setMenuAnchor({ el: null });
+            }}
+          >
+            <ListItemIcon><AddTaskIcon fontSize="small" /></ListItemIcon>Promote to System User
           </MenuItem>
         </Menu>
       </CardContent>
@@ -458,14 +486,78 @@ export default function Volunteers() {
 
   const approveReq = useMutation({
     mutationFn: async (process: string) => (await api.post("/method/salitemiret.api.volunteer.approve_volunteer_request", { process, create_user: 0 })).data.message,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["vol-requests"] }); qc.invalidateQueries({ queryKey: ["volunteers"] }); }
+    onSuccess: () => {
+      toast.success("Volunteer request approved");
+      qc.invalidateQueries({ queryKey: ["vol-requests"] });
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to approve request");
+    },
   });
   const promoteMember = useMutation({
-    mutationFn: async (member: string) => (await api.post("/method/salitemiret.api.auth.ensure_system_user_for_member", { member })).data.message,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vol-requests"] })
+    mutationFn: (member: string) => ensureSystemUserForMember(member),
+    onSuccess: (res) => {
+      let message = `System user ready (${res.user})`;
+      if (res.temp_password) {
+        message += ` — temp password: ${res.temp_password}`;
+        try {
+          navigator.clipboard.writeText(res.temp_password);
+          message += " (copied)";
+        } catch (error) {
+          console.warn("Clipboard write failed", error);
+        }
+      }
+      toast.success(message);
+      qc.invalidateQueries({ queryKey: ["vol-requests"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to promote member");
+    },
   });
+
   const genTempPwd = useMutation({
     mutationFn: async (member: string) => (await api.post("/method/salitemiret.api.volunteer.generate_member_temp_password", { member })).data.message,
+    onSuccess: (res: any) => {
+      if (res?.user && res?.password) {
+        let message = `Temp credentials for ${res.user}: ${res.password}`;
+        try {
+          navigator.clipboard.writeText(res.password);
+          message += " (copied)";
+        } catch (error) {
+          console.warn("Clipboard write failed", error);
+        }
+        toast.success(message);
+      } else {
+        toast.success("Temporary password generated");
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to generate password");
+    },
+  });
+
+  const ensureMember = useMutation({
+    mutationFn: (email: string) => ensureMemberForEmail(email),
+    onSuccess: (res) => {
+      toast.success(`Member ready: ${res.member}`);
+      qc.invalidateQueries({ queryKey: ["vol-requests"] });
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to create member");
+    },
+  });
+
+  const promoteVolunteerMember = useMutation({
+    mutationFn: ({ name, email }: { name: string; email?: string }) => promoteVolunteerToMember(name, email),
+    onSuccess: (res) => {
+      toast.success(res.created ? `Member created and linked: ${res.member}` : `Volunteer linked to member ${res.member}`);
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to create member from volunteer");
+    },
   });
 
   const createGroup = useMutation({
@@ -495,21 +587,35 @@ export default function Volunteers() {
 
   const createVol = useMutation({
     mutationFn: createVolunteer,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-vol"] }),
+    onSuccess: () => {
+      toast.success("Volunteer profile created");
+      qc.invalidateQueries({ queryKey: ["my-vol"] });
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to save volunteer"),
   });
   const updateVol = useMutation({
     mutationFn: ({ name, ...patch }: any) => updateVolunteer(name, patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-vol"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-vol"] });
+      qc.invalidateQueries({ queryKey: ["volunteers"] });
+      toast.success("Volunteer updated");
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to update volunteer"),
   });
   const deleteVol = useMutation({
     mutationFn: (name: string) => deleteVolunteer(name),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["volunteers"] });
       qc.invalidateQueries({ queryKey: ["my-vol"] });
+      toast.success("Volunteer deleted");
     },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to delete volunteer"),
   });
   const assignTask = useMutation({
     mutationFn: (email: string) => createToDo({ description: "General help", allocated_to: email }),
+    onSuccess: () => toast.success("Task created"),
+    onError: (err: any) => toast.error(err?.response?.data?.message || err?.message || "Failed to create task"),
   });
 
   // No render-time mode switching; self-service handles create vs update
@@ -543,6 +649,19 @@ export default function Volunteers() {
   };
   const handleAdminDelete = (name: string) => deleteVol.mutate(name);
   const handleAssign = (email: string) => assignTask.mutate(email);
+  const handlePromoteVolunteer = (member: string) => promoteMember.mutate(member);
+  const handleEnsureVolunteerMember = (row: any) => {
+    let email = (row?.email || "").trim();
+    if (!email) {
+      const input = window.prompt("Enter email for new member", "");
+      if (!input) {
+        toast.error("Volunteer requires an email to create a Member");
+        return;
+      }
+      email = input.trim();
+    }
+    promoteVolunteerMember.mutate({ name: row.name, email });
+  };
 
   const handleCreateGroup = async (payload: GroupForm) => {
     try {
@@ -614,6 +733,9 @@ export default function Volunteers() {
               onUpdate={handleAdminUpdate}
               onDelete={handleAdminDelete}
               onAssignTask={handleAssign}
+              onPromote={handlePromoteVolunteer}
+              onEnsureMember={handleEnsureVolunteerMember}
+              promoteBusy={promoteMember.isPending}
             />
           )}
           {tab===1 && (
@@ -631,23 +753,27 @@ export default function Volunteers() {
                         <TableCell>{r.member || "-"}</TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1}>
-                            <Button size="small" variant="contained" onClick={async ()=>{
-                              await approveReq.mutateAsync(r.name);
-                            }}>Approve</Button>
-                            {r.member && <Button size="small" variant="outlined" onClick={async ()=>{
-                              try {
-                                const res = await genTempPwd.mutateAsync(r.member);
-                                if (res?.user && res?.password) {
-                                  alert(`Temp credentials for ${res.user}: ${res.password}`);
-                                }
-                              } catch (e:any) {
-                                alert(e?.response?.data?.message || e?.message || "Failed to generate");
-                              }
-                            }}>Generate Password</Button>}
-                            {r.member && <Button size="small" onClick={async ()=>{
-                              await promoteMember.mutateAsync(r.member);
-                              alert("Promoted to System User");
-                            }}>Promote to System User</Button>}
+                            <Button size="small" variant="contained" onClick={()=> approveReq.mutate(r.name)} disabled={approveReq.isPending}>Approve</Button>
+                            {!r.member && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={()=> ensureMember.mutate(r.email)}
+                                disabled={!r.email || ensureMember.isPending}
+                              >
+                                Create Member
+                              </Button>
+                            )}
+                            {r.member && (
+                              <>
+                                <Button size="small" variant="outlined" onClick={()=> genTempPwd.mutate(r.member)} disabled={genTempPwd.isPending}>
+                                  Generate Password
+                                </Button>
+                                <Button size="small" onClick={()=> promoteMember.mutate(r.member)} disabled={promoteMember.isPending}>
+                                  Promote to System User
+                                </Button>
+                              </>
+                            )}
                           </Stack>
                         </TableCell>
                       </TableRow>
